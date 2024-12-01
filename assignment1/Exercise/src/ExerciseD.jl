@@ -23,7 +23,7 @@ function posterior_predictive(x, dataset)
 end
 
 # A begin
-px = MultivariateNormal([0, 0], [1 0; 0 1])
+px = MultivariateNormal([0, 0], [0.1 0; 0 1])
 x = rand(px, 20)
 
 # We fix theta
