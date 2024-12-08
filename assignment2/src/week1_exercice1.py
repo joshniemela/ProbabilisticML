@@ -13,7 +13,7 @@ def Generate_samples(n, sampler):
     while len(samples) != n:
         if (x := sampler()) != None:
             samples.append(x)
-    return samples
+    return np.array(samples)
 
 # analytically found that k=2 provides an upper bound with for a uniform proposal.
 k_uf = 4 # upperbound on p(x) 
@@ -71,15 +71,13 @@ def Rejection_sampler_uni(n): return Generate_samples(n,rejection_sample_uf)
 def Rejection_sampler_norm(n): return Generate_samples(n, rejection_sample_norm)
 
 
-# Sample from each distribution and compute
-# expectation, variance of X^2
+### estimating E[X^2] and plotting results
 
-classes = ["10", "100", "1000"]
+classes = ["10", "100", "1000"] # sample sizes
+num_experiments = 100
 
 x = np.arange(len(classes))  # x positions for each class
 width = 0.3  # Width of each bar
-
-
 rsu = []  # uniform rejection samples
 rsn = []  # Gaussian rejection samples
 snis = []  # Gaussian importance samples (self-normalized)
@@ -89,41 +87,63 @@ rsn_std = []  # standard deviations for Gaussian rejection samples
 snis_std = []  # standard deviations for importance samples
 
 for i in [10, 100, 1000]:
-    rsu_samples = np.array(Rejection_sampler_uni(i))**2
-    rsn_samples = np.array(Rejection_sampler_norm(i))**2
-    snis_samples = importance_sampler(i)**2
+    
+    # sampling num_experiments
+    rsu_samples = np.array([Rejection_sampler_uni(i)**2 for _ in range(num_experiments)])
+    rsn_samples = np.array([Rejection_sampler_norm(i)**2 for _ in range(num_experiments)])
+    snis_samples = np.array([importance_sampler(i)**2 for _ in range(num_experiments)])
+    # compute X^2 estimates
+    rsu_estimates = np.mean(rsu_samples, axis=1)
+    rsn_estimates = np.mean(rsn_samples, axis=1) 
+    snis_estimates = np.mean(snis_samples, axis=1) 
+   
+    # Compute mean and standard deviation of the estimates
+    rsu.append(np.mean(rsu_estimates))
+    rsn.append(np.mean(rsn_estimates))
+    snis.append(np.mean(snis_estimates))
 
-    # Compute mean and standard deviation for the samples
-    rsu.append(np.mean(rsu_samples))
-    rsn.append(np.mean(rsn_samples))
-    snis.append(np.mean(snis_samples))
-
-    rsu_std.append(np.std(rsu_samples))  # Standard deviation
-    rsn_std.append(np.std(rsn_samples))  # Standard deviation
-    snis_std.append(np.std(snis_samples))  # Standard deviation
-
-fig, ax = plt.subplots()
+    rsu_std.append(np.std(rsu_samples)) 
+    rsn_std.append(np.std(rsn_estimates))  
+    snis_std.append(np.std(snis_estimates)) 
 
 # Create the bar chart with error bars
-bars_rsu = ax.bar(x - width / 2, rsu, width, yerr=rsu_std, label='Uniform Rejection Sampler', capsize=5)
-bars_rsn = ax.bar(x + width / 2, rsn, width, yerr=rsn_std, label='Gaussian Rejection Sampler', capsize=5)
-bars_snis = ax.bar(x + width, snis, width, yerr=snis_std, label='Importance Sampler', capsize=5)
+fig, ax = plt.subplots(figsize=(10, 6))  # Adjust the figure size as needed
 
-ax.set_xlabel('Classes')
-ax.set_ylabel('Mean of X')
-ax.set_title('Comparison of Sampling Methods with Standard Deviation')
+# Adjust bar positions for better alignment
+bars_rsu = ax.bar(
+    x - width, rsu, width, yerr=rsu_std, label='Uniform Rejection Sampler', capsize=5, color='skyblue'
+)
+bars_rsn = ax.bar(
+    x, rsn, width, yerr=rsn_std, label='Gaussian Rejection Sampler', capsize=5, color='lightgreen'
+)
+bars_snis = ax.bar(
+    x + width, snis, width, yerr=snis_std, label='Importance Sampler', capsize=5, color='salmon'
+)
+
+# Add labels and titles
+ax.set_xlabel('Number of Samples', fontsize=12)
+ax.set_ylabel('Mean of X', fontsize=12)
+ax.set_title('Comparison of Sampling Methods with Standard Deviation', fontsize=14)
 ax.set_xticks(x)
-ax.set_xticklabels(classes)
-ax.legend()
+ax.set_xticklabels(classes, fontsize=10)
+ax.legend(fontsize=10)
 
-# Add values above bars for clarity
-for bars in [bars_rsu, bars_rsn, bars_snis]:
-    for bar in bars:
+# Add values above bars and show standard deviation
+for bars, std_values in zip([bars_rsu, bars_rsn, bars_snis], [rsu_std, rsn_std, snis_std]):
+    for bar, std in zip(bars, std_values):
         height = bar.get_height()
         ax.text(
-            bar.get_x() + bar.get_width() / 2, height, f'{height:.2f}', ha='center', va='bottom'
+            bar.get_x() + bar.get_width() / 2, height + 0.01, f'{height:.2f}', 
+            ha='center', va='bottom', fontsize=9
+        )
+        # Add standard deviation to the right of the bar
+        ax.text(
+            bar.get_x() + bar.get_width() / 2, height + std + 0.02, f'(±{std:.2f})',
+            ha='center', va='bottom', fontsize=9, color='darkblue'
         )
 
-# Display the plot
+# Adjust layout for readability
 plt.tight_layout()
+
+# Display the plot
 plt.show()
