@@ -10,17 +10,31 @@ although it trails behind the Gaussian rejection and importance samplers varianc
 
 \subsection{Pyro Advanced Modelling}
 
-\begin{itemize}
-  \item The code is shown in~\cref{sec:week4:code:modelling}.
-  \item
-  \item
-  When using SVI, the posterior is approximated by a \emph{guide},
-  which is a parametrized distrubtion $q_{\phi}(\Vb{z})$ with a
-  variational parameter $\phi$ which is learned during inference.
-  In NUTS, however, the posterior is represented as a collection
-  of samples drawn from the true posterior via MCMC.
-  \item
-\end{itemize}
+The code is shown in~\cref{sec:week4:code:modelling}.
+Both the SVI and NUTS methods result in a 98\% accuracy,
+but SVI is significantly faster than NUTS:
+
+\begin{verbatim}
+# SVI:
+Shape of posterior preditive for y (logits): torch.Size([500, 1, 50, 3])
+Success: 0.98
+
+# NUTS:
+Shape of posterior preditive for y (logits): torch.Size([100, 1, 50, 3])
+Success: 0.98
+\end{verbatim}
+
+When using SVI, the posterior is approximated by a \emph{guide},
+which is a parametrized distrubtion $q_{\phi}(\Vb{z})$ with a
+variational parameter $\phi$ which is learned during inference.
+In NUTS, however, the posterior is represented as a collection
+of samples drawn from the true posterior via MCMC.
+
+As both methods result in the same accuracy,
+but NUTS is slower, SVI might be a better method
+for the Iris problem.
+For a problem with a more complex distribution, however,
+we would expect NUTS to perform better if given enough time.
 
 \subsection{Programming GPs}
 

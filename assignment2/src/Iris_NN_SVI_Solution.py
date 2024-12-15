@@ -126,67 +126,6 @@ class Model:
             obs=pyro.sample("obs", pdist.Categorical(logits=logits), obs=y)
 
 
-# Make the Model and the Guide objects, and optimize the ELBO.  
-
-# Instantiate the Model object
-model=Model()
-
-if MAP:
-    # MAP estimate of model parameter (here SVI boild down to simple gradient descent)
-    guide=pyro.infer.autoguide.AutoDelta(model)
-else:
-    # Variational estimate of model parameters using diagonal normal (SVI)
-    guide=pyro.infer.autoguide.AutoDiagonalNormal(model)
-
-# Optimizer
-adam=pyro.optim.Adam({"lr": 0.01})
-# SVI
-svi=pyro.infer.SVI(model, guide, adam, loss=pyro.infer.Trace_ELBO())
-
-# Clear any previously used parameters
-pyro.clear_param_store()
-
-# Optimize the ELBO
-elbo=[]
-for j in range(0, MAXIT):
-    loss=svi.step(x, y)
-    elbo.append(loss)
-    if j%REPORT==0:
-        print("[Iteration %04d] loss: %.4f" % (j, loss))
-
-
-# ELBO vs. iteration plot
-plt.xlabel("Iteration")
-plt.ylabel("- ELBO")
-plt.plot(elbo)
-
-
-# Print the estimated parameters.
-
-for name, value in pyro.get_param_store().items():
-    print(name, pyro.param(name))
-
-
-# Get the [posterior predictive distribution](https://en.wikipedia.org/wiki/Posterior_predictive_distribution) by sampling the model's parameters from the Guide object and applying the model to the test set.
-
-# 
-
-guide.requires_grad_(False)
-
-posterior_predictive=pyro.infer.Predictive(model, guide=guide, num_samples=S, return_sites=["logits"])(
-x_test, None
-)
-
-
-# Evaluate the accuracy of the model on the test set.
-# 
-
-# Print accuracy
-logits=posterior_predictive['logits']
-print("Shape of posterior preditive for y (logits):", logits.shape)
-print("Success: %.2f" % accuracy(logits, y_test))
-
-
 # # NUTS inferece
 
 # Perform inference using NUTS
