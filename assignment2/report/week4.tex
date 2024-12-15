@@ -1,3 +1,17 @@
+\subsection{Advanced Sampling}
+Comparison plot, including methods from the previous week. (1000 experiments)
+\begin{center}
+    \includegraphics[width=12cm]{./figures/comparison2.png}
+\end{center}
+From this comparison we can notice that the Nuts sampler is consistently overestimating the target mean, unlike the simpler methods.
+In terms of variance NUTS only beats the uniform rejection sampler.
+The Nuts samplers variance scales well with the number of samples, 
+although it trails behind the Gaussian rejection and importance samplers variances.
+
+
+
+
+
 \subsection{Programming GPs}
 
 The code is shown in~\cref{sec:week4:code:gp}.
