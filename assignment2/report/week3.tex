@@ -2,6 +2,35 @@
 
 \subsubsection*{Bishop 11.3}
 
+To transform a random variable \( z \sim \text{Uniform}(0, 1) \) into a random variable \( y \) with the Cauchy distribution 
+\[
+p(y) = \frac{1}{\pi} \frac{1}{1 + y^2},
+\]
+We Firstly determine the CDF of the Cauchy distribution
+\[
+F_Y(y) = \int_{-\infty}^y \frac{1}{\pi} \frac{1}{1 + t^2} \, dt = \frac{1}{\pi} \arctan(y) + \frac{1}{2}.
+\]
+To map \( z \sim \text{Uniform}(0, 1) \) to \( y \sim p(y) \), we set:
+\[
+F_Y(y) = z.
+\]
+And solve for y
+\[
+\frac{1}{\pi} \arctan(y) + \frac{1}{2} = z.
+\]
+\[
+\arctan(y) = \pi z - \frac{\pi}{2}.
+\]
+Taking the tangent of both sides:
+\[
+y = \tan\left(\pi z - \frac{\pi}{2}\right).
+\]
+We can conclude that the transformation is given by:
+\[
+y = \tan\left(\pi z - \frac{\pi}{2}\right) \quad \text{or equivalently} \quad y = -\cot(\pi z).
+\]
+
+
 \subsection{Programming Exercise}
 
 \subsection{Pyro}
