@@ -16,11 +16,13 @@ def Generate_samples(n, sampler):
     return np.array(samples)
 
 # analytically found that k=2 provides an upper bound with for a uniform proposal.
-k_uf = 4 # upperbound on p(x) 
+
+
 
 def rejection_sample_uf ():
+    kq = 4 # upperbound on p(x) 
     z0 = np.random.uniform(-3,3) # sample on q(x) 
-    u0 = np.random.uniform(0, k_uf) # k*q(z0) is constant
+    u0 = np.random.uniform(0, kq) # k*q(z0) is constant
 
     if u0 > p(z0): #reject
         return None
@@ -33,14 +35,18 @@ def q_norm(x):
     mean = 0
     std = 1
     """
-    return (1 /(np.sqrt(2 * np.pi))) * np.exp(-0.5 * (x ** 2))
+    return (1 /(np.sqrt(2 * np.pi))) * np.exp(-0.5 * x ** 2)
 
 
 def rejection_sample_norm():
     """
-    k = 10
+    k = 4
     """
     z0 = np.random.normal(0,1)
+    # ensure sample is in [-3,3]
+    if not (-3 <= z0 <= 3): # proposal sample out of range
+        return None 
+
     u0 = np.random.uniform(0, 10 * q_norm(z0))
     if u0 > p(z0): #reject
         return None
@@ -74,7 +80,7 @@ def Rejection_sampler_norm(n): return Generate_samples(n, rejection_sample_norm)
 ### estimating E[X^2] and plotting results
 
 classes = ["10", "100", "1000"] # sample sizes
-num_experiments = 100
+num_experiments = 1000
 
 x = np.arange(len(classes))  # x positions for each class
 width = 0.3  # Width of each bar
@@ -147,3 +153,68 @@ plt.tight_layout()
 
 # Display the plot
 plt.show()
+
+
+### Include NUTS sampler results (Hardcoded)
+
+# Data for NUTS results (hardcoded)
+nuts_means = [0.9122459888458252, 0.8607342839241028, 0.9301851391792297]
+nuts_stds = [0.5354326367378235, 0.1312291920185089, 0.09108437597751617]
+
+# Existing data
+classes = ["10", "100", "1000"]  # sample sizes
+num_experiments = 1000
+
+# Positions for bars
+x = np.arange(len(classes))  # x positions for each class
+width = 0.2  # Width of each bar
+
+# Create the bar chart with error bars
+fig, ax = plt.subplots(figsize=(10, 6))  # Adjust the figure size as needed
+
+# Add bars for each sampling method
+bars_rsu = ax.bar(
+    x - 1.5 * width, rsu, width, yerr=rsu_std, label='Uniform Rejection Sampler', capsize=5, color='skyblue'
+)
+bars_rsn = ax.bar(
+    x - 0.5 * width, rsn, width, yerr=rsn_std, label='Gaussian Rejection Sampler', capsize=5, color='lightgreen'
+)
+bars_snis = ax.bar(
+    x + 0.5 * width, snis, width, yerr=snis_std, label='Importance Sampler', capsize=5, color='salmon'
+)
+bars_nuts = ax.bar(
+    x + 1.5 * width, nuts_means, width, yerr=nuts_stds, label='NUTS Sampler', capsize=5, color='orange'
+)
+
+# Add labels and titles
+ax.set_xlabel('Number of Samples', fontsize=12)
+ax.set_ylabel('Mean of X', fontsize=12)
+ax.set_title('Comparison of Sampling Methods with Standard Deviation', fontsize=14)
+ax.set_xticks(x)
+ax.set_xticklabels(classes, fontsize=10)
+ax.legend(fontsize=10)
+
+# Add values above bars and show standard deviation
+for bars, std_values in zip([bars_rsu, bars_rsn, bars_snis, bars_nuts], [rsu_std, rsn_std, snis_std, nuts_stds]):
+    for bar, std in zip(bars, std_values):
+        height = bar.get_height()
+        ax.text(
+            bar.get_x() + bar.get_width() / 2, height + 0.01, f'{height:.2f}', 
+            ha='center', va='bottom', fontsize=9
+        )
+        # Add standard deviation to the right of the bar
+        ax.text(
+            bar.get_x() + bar.get_width() / 2, height + std + 0.02, f'(±{std:.2f})',
+            ha='center', va='bottom', fontsize=9, color='darkblue'
+        )
+
+# Adjust layout for readability
+plt.tight_layout()
+
+# Display the plot
+plt.show()
+
+
+
+
+
