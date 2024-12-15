@@ -8,9 +8,19 @@ In terms of variance NUTS only beats the uniform rejection sampler.
 The Nuts samplers variance scales well with the number of samples, 
 although it trails behind the Gaussian rejection and importance samplers variances.
 
+\subsection{Pyro Advanced Modelling}
 
-
-
+\begin{itemize}
+  \item The code is shown in~\cref{sec:week4:code:modelling}.
+  \item
+  \item
+  When using SVI, the posterior is approximated by a \emph{guide},
+  which is a parametrized distrubtion $q_{\phi}(\Vb{z})$ with a
+  variational parameter $\phi$ which is learned during inference.
+  In NUTS, however, the posterior is represented as a collection
+  of samples drawn from the true posterior via MCMC.
+  \item
+\end{itemize}
 
 \subsection{Programming GPs}
 
