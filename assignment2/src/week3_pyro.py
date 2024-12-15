@@ -9,7 +9,7 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
-get_ipython().run_line_magic('matplotlib', 'inline')
+pyro.set_rng_seed(1712343505)
 
 
 fig_format = "pdf"

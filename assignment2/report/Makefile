@@ -6,13 +6,15 @@
 DOCNAME=main
 
 WEEK3_PYRO_NOTEBOOK=../src/week3_pyro.ipynb
+WEEK4_GP_NOTEBOOK=../src/week4_gp.ipynb
 
-# Plots of the week 1 pyro assigments
-PLOTS_W1_PYRO=./figures/gmm_samples.pdf ./figures/cond_pdf.pdf
-PLOTS=$(PLOTS_W1_PYRO)
+PLOTS_W3_PYRO=./figures/gmm_samples.pdf ./figures/cond_pdf.pdf
+PLOTS_W4_GP=./figures/gp_samples.pdf ./figures/gp_predict.pdf
+PLOTS=$(PLOTS_W3_PYRO) $(PLOTS_W4_GP)
 
-CODE_W1_PYRO=../src/week3_pyro.py
-CODE=$(CODE_W1_PYRO)
+CODE_W3_PYRO=../src/week3_pyro.py
+CODE_W4_GP=../src/week4_gp.py
+CODE=$(CODE_W3_PYRO) $(CODE_W4_GP)
 
 # You want latexmk to *always* run, because make does not have all the info.
 # Also, include non-file targets in .PHONY so they are run regardless of any
@@ -37,9 +39,21 @@ plots: $(PLOTS)
 		jupyter-execute $<
 		cp ../src/$(notdir $@) $@
 
-$(CODE_W1_PYRO): $(WEEK3_PYRO_NOTEBOOK)
+./figures/gp_samples.pdf: $(WEEK4_GP_NOTEBOOK)
+		jupyter-execute $<
+		cp ../src/$(notdir $@) $@
+
+./figures/gp_predict.pdf: $(WEEK4_GP_NOTEBOOK)
+		jupyter-execute $<
+		cp ../src/$(notdir $@) $@
+
+$(CODE_W3_PYRO): $(WEEK3_PYRO_NOTEBOOK)
 		jupyter-nbconvert $< --to=python
-		sed -i '/^# In\[[0-9]*\]:/{N;N;d;}' ../src/week3_pyro.py
+		sed -i '/^# In\[[0-9]*\]:/{N;N;d;}' $@
+
+$(CODE_W4_GP): $(WEEK4_GP_NOTEBOOK)
+		jupyter-nbconvert $< --to=python
+		sed -i '/^# In\[[0-9]*\]:/{N;N;d;}' $@
 
 # MAIN LATEXMK RULE
 
