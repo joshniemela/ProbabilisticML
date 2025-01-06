@@ -169,7 +169,7 @@ class DDPM(nn.Module):
             u0 = torch.rand(1)
             i = torch.arange(1, k + 1)
             t = (
-                (torch.remainder(u0 + i / k, 1) * self.T)
+                torch.round(torch.remainder(u0 + i / k, 1) * self.T)
                 .int()
                 .unsqueeze(dim=1)
                 .to(x0.device)
