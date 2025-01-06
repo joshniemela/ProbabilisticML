@@ -129,7 +129,7 @@ class DDPM(nn.Module):
 
         return xt
 
-    def elbo_simple(self, x0):
+    def elbo_simple(self, x0, t):
         """
         ELBO training objective (Algorithm 1 in Ho et al, 2020)
 
@@ -137,6 +137,8 @@ class DDPM(nn.Module):
         ----------
         x0: torch.tensor
             Input image
+        t: torch.tensor
+            Batch of timesteps
 
         Returns
         -------
@@ -144,19 +146,33 @@ class DDPM(nn.Module):
             ELBO value
         """
 
-        # Sample time step t
-        t = torch.randint(1, self.T, (x0.shape[0], 1)).to(x0.device)
-
         # Sample noise
         epsilon = torch.randn_like(x0)
 
-        # TODO: Forward diffusion to produce image at step t
         xt = self.forward_diffusion(x0, t, epsilon)
 
         return -nn.MSELoss(reduction="mean")(epsilon, self.network(xt, t))
 
-    def loss(self, x0):
+    def loss(self, x0, sampler="iid"):
         """
         Loss function. Just the negative of the ELBO.
         """
-        return -self.elbo_simple(x0).mean()
+        assert sampler in ["iid", "lds"]
+
+        k = x0.shape[0]
+        # Sample time step t
+        # Independent sampling of t
+        if sampler == "iid":
+            t = torch.randint(1, self.T, (k, 1)).to(x0.device)
+        # Low discrepency sampler
+        elif sampler == "lds":
+            u0 = torch.rand(1)
+            i = torch.arange(1, k + 1)
+            t = (
+                (torch.remainder(u0 + i / k, 1) * self.T)
+                .int()
+                .unsqueeze(dim=1)
+                .to(x0.device)
+            )
+
+        return -self.elbo_simple(x0, t).mean()
