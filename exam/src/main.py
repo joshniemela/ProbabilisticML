@@ -4,7 +4,7 @@ from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 
 from utils import ExponentialMovingAverage
-from ddpm import DDPM
+from ddpm import DDPM, ImportanceDDPM
 from scorenet import ScoreNet
 
 
