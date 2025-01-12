@@ -62,5 +62,6 @@ train(
     epochs=epochs,
     device=device,
     ema=True,
-    per_epoch_callback=reporter
+    per_epoch_callback=reporter,
+    json_filepath="DDPM"
 )
