@@ -124,7 +124,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 mnist_unet = ScoreNet((lambda t: torch.ones(1).to(device)))
 
 # Construct model
-model = DDPM(mnist_unet, T=T).to(device)
+model = ImportanceDDPM(mnist_unet, T=T).to(device)
 
 # Construct optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -153,6 +153,9 @@ def reporter(model):
         plt.imshow(transforms.functional.to_pil_image(grid), cmap="gray")
         plt.show()
 
+def report_num_ts(model):
+    print(model.t_num_samples)
+    #print(model.prev_losses)
 
 # Call training loop
 train(
@@ -162,6 +165,6 @@ train(
     dataloader_train,
     epochs=epochs,
     device=device,
-    ema=True,
-    per_epoch_callback=reporter,
+    ema=False,
+    per_epoch_callback=reporter
 )
