@@ -21,6 +21,7 @@ def train(
     epochs,
     device,
     ema=True,
+    dropout=None,
     per_epoch_callback=None,
     json_filepath = None,
 ):
@@ -43,6 +44,8 @@ def train(
         Pytorch device specification
     ema: Boolean
         Whether to activate Exponential Model Averaging
+    dropout: float or None
+        set to float to use conditional DDPM eg 0.2
     per_epoch_callback: function
         Called at the end of every epoch
     json_filepath : str
@@ -90,10 +93,20 @@ def train(
         epoch_loss = 0.0 # Initialize epoch loss
         global_step_counter = 0
 
-        for i, (x, _) in enumerate(dataloader):
+        for i, (x, y) in enumerate(dataloader):
             x = x.to(device)
+           
             optimizer.zero_grad()
-            loss = model.loss(x)
+            if dropout: # use conditional DDPM
+                y = y.to(device)
+                # mask out some of the data with probability dropout
+                if dropout > 0:
+                    mask = torch.rand(y.shape[0], device=device) < dropout
+                    # We mask values to 10 since 0...9 are the MNIST classes
+                    y[mask] = 10
+                loss = model.loss(x,y)
+            else:
+                loss = model.loss(x)
             epoch_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -152,3 +165,26 @@ def reporter(model):
         plt.imshow(transforms.functional.to_pil_image(grid), cmap="gray")
         plt.show()
 
+
+def cond_reporter(model):
+    """Callback function used for plotting images during training"""
+
+    # Switch to eval mode
+    model.eval()
+
+    with torch.no_grad():
+        nsamples = 10
+        # sample 0 to 10
+        c = torch.randint(0, 11, (1,)).item()
+
+        samples = model.sample((nsamples, 28 * 28), c=c).cpu()
+
+        # Map pixel values back from [-1,1] to [0,1]
+        samples = (samples + 1) / 2
+        samples = samples.clamp(0.0, 1.0)
+
+        # Plot in grid
+        grid = utils.make_grid(samples.reshape(-1, 1, 28, 28), nrow=nsamples)
+        plt.gca().set_axis_off()
+        plt.imshow(transforms.functional.to_pil_image(grid), cmap="gray")
+        plt.show()
