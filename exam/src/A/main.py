@@ -55,13 +55,13 @@ scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.9999)
 
 # Call training loop
 train(
-    model,
+    DDPM(mnist_unet, T=T).to(device),
     optimizer,
     scheduler,
     dataloader_train,
     epochs=epochs,
     device=device,
     ema=True,
-    per_epoch_callback=reporter,
-    json_filepath="DDPM"
+    per_epoch_callback=None,
+    json_filepath="exam/src/A/results/DDPM"
 )
