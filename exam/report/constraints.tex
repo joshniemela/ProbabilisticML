@@ -29,3 +29,33 @@ we therefore have
   = Q f | X
   \sim \mathcal{N}\left( 0, Q K(X) \tp{Q} \right).
 \end{align*}
+
+Letting ${\Sigma} = Q K(X) \tp{Q}$, we partition ${\Sigma}$
+into four blocks
+\begin{align*}
+  {\Sigma} &=
+  \left[
+    \begin{array}{c|c}
+      \Sigma_{1 1} & \Sigma_{1 2} \\
+      \hline
+      \Sigma_{2 1} & \Sigma_{2 2} \\
+    \end{array}
+  \right]
+  \intertext{
+    where
+  }
+  \Sigma_{1 1} = w K(X) \tp{w},
+  \quad
+  \Sigma_{1 2} &= w K(X),
+  \quad
+  \Sigma_{2 1} = K(X) \tp{w},
+  \quad
+  \Sigma_{2 2} = K(X).
+\end{align*}
+We then have that the conditional
+$f | X, \hat{q} \sim \mathcal{N}(\mu_{2|1}, \Sigma_{2|1})$, where
+\begin{align*}
+  \mu_{2|1} = \Sigma_{2 1} \Sigma_{1 1}^{-1} \hat{q},
+  \quad
+  \Sigma_{2|1} = \Sigma_{2 2} - \Sigma_{2 1} \Sigma_{1 1}^{-1} \tp{\Sigma_{2 1}}
+\end{align*}
