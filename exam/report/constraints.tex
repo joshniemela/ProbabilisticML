@@ -1,0 +1,31 @@
+\subsection{Fitting a standard GP}
+
+\subsection{Learning with Integral Constraints}
+
+We write the constraint $\hat{q}$ in matrix form:
+
+\begin{align*}
+  \hat{q} = \sum_{i=1}^\ell w_i f(x_i) = {w} f
+\end{align*}
+where $w = \begin{bmatrix} w_1, \ldots, w_\ell \end{bmatrix}$
+and $f = \tp{\begin{bmatrix} f(x_1), \ldots, f(x_\ell) \end{bmatrix}}$.
+%
+Writing the joint distribution of $(\hat{q}, f)$ as a matrix
+and facotring out $f$ we get
+\begin{align*}
+  (\hat{q}, f)
+  = \left[ \begin{array}{c} \hat{q} \\ \hline f \end{array} \right]
+  = \left[ \begin{array}{c} w \\ \hline I \end{array} \right] f
+  = Q f
+\end{align*}
+with $Q = \left[ \begin{array}{c} w \\ \hline I \end{array} \right]$.
+
+As $f \sim \mathcal{GP}(0, k(\cdot, \cdot))$, then we must by definition have
+$f | X \sim \mathcal{N}\left( 0, K(X) \right)$
+and as multivariate normal distributions are closed under linear transformations
+we therefore have
+\begin{align*}
+  (\hat{q}, f) | X
+  = Q f | X
+  \sim \mathcal{N}\left( 0, Q K(X) \tp{Q} \right).
+\end{align*}
