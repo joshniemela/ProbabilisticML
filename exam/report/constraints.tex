@@ -59,3 +59,24 @@ $f | X, \hat{q} \sim \mathcal{N}(\mu_{2|1}, \Sigma_{2|1})$, where
   \quad
   \Sigma_{2|1} = \Sigma_{2 2} - \Sigma_{2 1} \Sigma_{1 1}^{-1} \tp{\Sigma_{2 1}}
 \end{align*}
+
+
+To determine whether $\Sigma_{2|1}$ is full rank, we can check if $\Sigma_{2 | 1}$
+has a trivial null space. This is equivalent to proving that there exists no
+vector $v \ne \overrightarrow{0}$ such that $\Sigma_{2 | 1} v = \overrightarrow{0}$, since the existance of such a vector
+implies that $v$ is contained in the null space of $\Sigma_{2 | 1}$ and thus is not full rank.
+We prove that it is not full rank by contradiction. We let $v=\tp{w}$ since
+$w$ was the weighting for our integral constraint (a linear operator that imposed a
+constraint on our distribution) and $w$ will never be $\overrightarrow{0}$ by construction. We then have
+\begin{align}
+  \Sigma_{2|1} \tp{w}
+  &= \left(K(X) - K(X) \tp{w} (wK(X)\tp{w})^{-1} \tp{\left(K(X)\tp{w}\right)}\right) \tp{w} \\
+  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} \tp{\left(K(X)\tp{w}\right)} \tp{w} \\
+  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (w\tp{K(X)} \tp{w}) \\
+  \intertext{We know that a quadratic form is equal to its transpose:}
+  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (wK(X) \tp{w}) \\
+  &= K(X)\tp{w} - K(X) \tp{w}\\
+  &= \overrightarrow{0}\quad \rightarrow \leftarrow
+\end{align}
+We have shown by contradiction that $\Sigma_{2|1}$ will never be full rank since $\tp{w}$ will 
+always be in the null space of $\Sigma_{2|1}$. 
