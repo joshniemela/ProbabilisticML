@@ -53,7 +53,9 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 # Setup simple scheduler
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.9999)
 
-# Call training loop
+# Training the models while reporting, 
+
+
 train(
     DDPM(mnist_unet, T=T).to(device),
     optimizer,
@@ -62,6 +64,8 @@ train(
     epochs=epochs,
     device=device,
     ema=True,
-    per_epoch_callback=None,
+    per_epoch_callback=[reporter,10],
     json_filepath="exam/src/A/results/DDPM"
 )
+
+#trai

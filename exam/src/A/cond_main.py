@@ -1,7 +1,6 @@
 import torch
-from torchvision import datasets, transforms, utils
+from torchvision import datasets, transforms
 from tqdm.auto import tqdm
-import matplotlib.pyplot as plt
 
 from utils import ExponentialMovingAverage
 from cond_ddpm import CondDDPM

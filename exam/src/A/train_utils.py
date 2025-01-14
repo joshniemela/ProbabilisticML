@@ -11,8 +11,6 @@ from tqdm.auto import tqdm
 from utils import ExponentialMovingAverage
 
 
-
-
 def train(
     model,
     optimizer,
@@ -46,8 +44,8 @@ def train(
         Whether to activate Exponential Model Averaging
     dropout: float or None
         set to float to use conditional DDPM eg 0.2
-    per_epoch_callback: function
-        Called at the end of every epoch
+    per_epoch_callback: (function, int) or None
+        Call function on the current model, some number of times 
     json_filepath : str
         filename to stream epoch losses to
     """
@@ -95,8 +93,8 @@ def train(
 
         for i, (x, y) in enumerate(dataloader):
             x = x.to(device)
-           
             optimizer.zero_grad()
+
             if dropout: # use conditional DDPM
                 y = y.to(device)
                 # mask out some of the data with probability dropout
@@ -140,12 +138,17 @@ def train(
                 json_file.seek(0)  # Go back to the beginning of the file
                 json.dump(metrics, json_file, indent=4)  # Write updated data
                 json_file.truncate()  # Remove any leftover data
-            
-        if per_epoch_callback:
-            per_epoch_callback(ema_model.module if ema else model)
-    
+                print(epoch)
+                print(epochs)
+                print(per_epoch_callback[1])
+                print(epochs/per_epoch_callback[1])
+                print((epoch+1) % int(epochs/per_epoch_callback[1]))
+        if per_epoch_callback and (epoch+1) % int(epochs/per_epoch_callback[1]) == 0:
+            print("Call")
+            per_epoch_callback[0](ema_model.module if ema else model, epoch+1, fil)
 
-def reporter(model):
+
+def reporter(model, epoch, file_path):
     """Callback function used for plotting images during training"""
 
     # Switch to eval mode
@@ -162,7 +165,7 @@ def reporter(model):
         # Plot in grid
         grid = utils.make_grid(samples.reshape(-1, 1, 28, 28), nrow=nsamples)
         plt.gca().set_axis_off()
-        plt.imshow(transforms.functional.to_pil_image(grid), cmap="gray")
+        plt.imsave(transforms.functional.to_pil_image(grid), cmap="gray", title=)
         plt.show()
 
 
