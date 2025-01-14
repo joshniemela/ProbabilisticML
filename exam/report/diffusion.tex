@@ -18,4 +18,44 @@ We note that rounding is equivalent to taking the floor of the value offset by $
 \end{align}
 
 
+
+\subsubsection{Variation 2: Classifier-free guidance}
+Another variation we implemented is classifier-free guidance.
+The motivation behind this method is two-fold:
+\begin{enumerate}
+  \item It allows us to generate specific images by providing additional guidance, in our case, the digit number.
+  \item It allows the model to learn the conditional distributions, leading to better quality but less variability.
+\end{enumerate}
+
+
+
+To implement classifier-free guidance, we create a linear combination of a conditional and unconditional score estimator, as derived in \cite{classifier_free_guidance}, for our data which is conditioned on the labels
+$y$.
+\begin{align}
+  \hat{\epsilon_\theta}(x_t, t, y) &= \epsilon_\theta(x_t, t, y) + w (\epsilon_\theta(x_t, t, y) - \epsilon_\theta(x_t, t))\label{cfg_epsilon}
+\end{align}
+where $w$ is a weighting factor that determines how strongly guidance is applied, at 0 it is unconditional, and as $w$ increases, the model becomes more guided,
+with 1 leading to a conditional score estimator and $w > 1$ leading to increasingly higher fidelity and less diversity.
+This estimator can be derived by looking at the conditional score $\nabla_{x_t} \log (p(y \mid x_t))$
+and by applying Bayes' rule:
+\begin{align}
+  \nabla_{x_t} \log (p(y|x_t)) &= \nabla_{x_t} \log (p(x_t \mid y)) - \nabla_{x_t} \log (p(x_t)) + \nabla_{x_t} \log (p(y))\\
+  \intertext{The last term is dropped since $y$ is constant with respect to $x_t$.}
+  &= \nabla_{x_t} \log (p(x_t \mid y)) - \nabla_{x_t} \log (p(x_t))
+\end{align}
+With further derivation (using the equivalence between $\nabla_{x_t} \log (p(x_t))$ and $\epsilon_\theta(x_t, t)$, and the equation derived for classifier guided diffusion \cite{classifier_free_guidance}), the resulting equation \ref{cfg_epsilon} is reached. 
+
+To implement this, we simply replace the original noise term $\epsilon_\theta(x_t, t)$ with the new term $\hat{\epsilon_\theta}(x_t, t, y)$.
+We inject the class information into this new model $\hat{\epsilon_\theta}(x_t, t, y)$, giving us 
+the conditioned model.
+In the same way as we inject the time information into the model, we also inject the class information by adding a class embedding
+which is analogous to the time embedding.
+To get our unconditioned model, we mask 20\% of the class labels in training at random.
+The masked value in our specific implementation is set to $10$, since 0 throgh 9 are 
+the classes in the MNIST dataset.
+We therefore get the unconditioned model $\epsilon_\theta(x_t, t) = \epsilon_\theta(x_t, t, y=10)$.
+
+This method of dropping out the class information at random gives us a model
+that both learns the conditional distributions of each digit, as well as the
+general unconditional distribution of the whole dataset.
 \subsection{}
