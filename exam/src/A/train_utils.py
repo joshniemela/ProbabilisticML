@@ -54,7 +54,7 @@ def train(
     # initial metrics dump to json file
     if json_filepath is not None:
         time_ref = datetime.now()
-        dir_name = f"{json_filepath}_{time_ref.year}-{time_ref.month}-{time_ref.day}_{time_ref.hour}.{time_ref.minute}"
+        dir_name = f"{json_filepath}/{time_ref.year}-{time_ref.month}-{time_ref.day}_{time_ref.hour}.{time_ref.minute}"
         os.makedirs(dir_name, exist_ok=True)  # Create the directory
         # Create the file path within the directory
         file_name_ts = os.path.join(dir_name, "data.json")
@@ -145,9 +145,9 @@ def train(
                 print((epoch+1) % int(epochs/per_epoch_callback[1]))
         if per_epoch_callback and (epoch+1) % int(epochs/per_epoch_callback[1]) == 0:
             print("Call")
-            per_epoch_callback[0](ema_model.module if ema else model, epoch+1, fil)
+            per_epoch_callback[0](ema_model.module if ema else model, epoch+1, dir_name)
 
-
+# Modified to save image to file
 def reporter(model, epoch, file_path):
     """Callback function used for plotting images during training"""
 
@@ -164,12 +164,16 @@ def reporter(model, epoch, file_path):
 
         # Plot in grid
         grid = utils.make_grid(samples.reshape(-1, 1, 28, 28), nrow=nsamples)
-        plt.gca().set_axis_off()
-        plt.imsave(transforms.functional.to_pil_image(grid), cmap="gray", title=)
-        plt.show()
+
+        # Plot and save
+        plt.imshow(transforms.functional.to_pil_image(grid), cmap="gray")
+        plt.axis("off")
+        plt.title(f"epoch: {epoch}")
+        plt.savefig(file_path + f"/epoch{epoch}.png", bbox_inches="tight", pad_inches=0)
+        plt.close()
 
 
-def cond_reporter(model):
+def cond_reporter(model, epoch, file_path):
     """Callback function used for plotting images during training"""
 
     # Switch to eval mode
@@ -188,6 +192,9 @@ def cond_reporter(model):
 
         # Plot in grid
         grid = utils.make_grid(samples.reshape(-1, 1, 28, 28), nrow=nsamples)
-        plt.gca().set_axis_off()
+        
         plt.imshow(transforms.functional.to_pil_image(grid), cmap="gray")
-        plt.show()
+        plt.axis("off")
+        plt.title(f"epoch: {epoch}")
+        plt.savefig(file_path + f"/epoch{epoch}.png", bbox_inches="tight", pad_inches=0)
+        plt.close()
