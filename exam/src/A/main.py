@@ -7,6 +7,7 @@ from train_utils import train, reporter, cond_reporter
 from ddpm import DDPM
 from importance_ddpm import ImportanceDDPM
 from cond_ddpm import CondDDPM
+from sde_ddpm import SDE_DDPM
 
 # Parameters
 T = 1000
@@ -56,6 +57,19 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.9999)
 
 # Training the models while reporting, 
+sde_model = SDE_DDPM(mnist_unet, 500, 25).to(device)
+train(
+    sde_model,
+    optimizer,
+    scheduler,
+    dataloader_train,
+    epochs=epochs,
+    device=device,
+    ema=True,
+    dropout=None,
+    per_epoch_callback=[reporter,100],
+    json_filepath="exam/src/A/results/SDE"
+)
 
 #model = DDPM(mnist_unet, T=T).to(device)
 base_model = DDPM(mnist_unet, T).to(device)
