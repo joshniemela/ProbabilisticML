@@ -1,4 +1,5 @@
 import torch
+import pickle
 from torchvision import datasets, transforms
 
 from scorenet import ScoreNet
@@ -8,6 +9,7 @@ from ddpm import DDPM
 from importance_ddpm import ImportanceDDPM
 from cond_ddpm import CondDDPM
 from sde_ddpm import SDE_DDPM
+
 
 # Parameters
 T = 1000
@@ -45,7 +47,13 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # different noise levels, such that the output can be rescaled.
 # Since we are predicting the noise (rather than the score), we
 # ignore this rescaling and just set std=1 for all t.
-mnist_unet = ScoreNet((lambda t: torch.ones(1).to(device)))
+
+#mnist_unet = ScoreNet((lambda t: torch.ones(1).to(device)))
+import numpy as np
+ 
+mnist_unet = ScoreNet(lambda t: torch.sqrt((25**(2*t) - 1.) / 2. / np.log(25)) )
+sde_model = SDE_DDPM(mnist_unet, 25).to(device)
+#reporter(sde_model,1, "here")
 
 # Construct model
 model = DDPM(mnist_unet, T=T).to(device)
@@ -57,7 +65,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.9999)
 
 # Training the models while reporting, 
-sde_model = SDE_DDPM(mnist_unet, 500, 25).to(device)
+sde_model = SDE_DDPM(mnist_unet, 25).to(device)
 train(
     sde_model,
     optimizer,
