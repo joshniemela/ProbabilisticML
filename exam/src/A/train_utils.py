@@ -61,7 +61,6 @@ def train(
         frame = inspect.currentframe()
         args_info = inspect.getargvalues(frame)
         params = args_info.locals
-        print(params.keys())
         metrics = {
             name: type(params[name]).__name__ if isinstance(params[name], object) else params[name]
             for name in params.keys()
@@ -138,13 +137,8 @@ def train(
                 json_file.seek(0)  # Go back to the beginning of the file
                 json.dump(metrics, json_file, indent=4)  # Write updated data
                 json_file.truncate()  # Remove any leftover data
-                print(epoch)
-                print(epochs)
-                print(per_epoch_callback[1])
-                print(epochs/per_epoch_callback[1])
-                print((epoch+1) % int(epochs/per_epoch_callback[1]))
         if per_epoch_callback and (epoch+1) % int(epochs/per_epoch_callback[1]) == 0:
-            print("Call")
+            print("Callback")
             per_epoch_callback[0](ema_model.module if ema else model, epoch+1, dir_name)
 
 # Modified to save image to file
@@ -192,9 +186,10 @@ def cond_reporter(model, epoch, file_path):
 
         # Plot in grid
         grid = utils.make_grid(samples.reshape(-1, 1, 28, 28), nrow=nsamples)
-        
+
         plt.imshow(transforms.functional.to_pil_image(grid), cmap="gray")
         plt.axis("off")
         plt.title(f"epoch: {epoch}")
         plt.savefig(file_path + f"/epoch{epoch}.png", bbox_inches="tight", pad_inches=0)
         plt.close()
+

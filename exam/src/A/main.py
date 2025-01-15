@@ -2,9 +2,11 @@ import torch
 from torchvision import datasets, transforms
 
 from scorenet import ScoreNet
-from train_utils import train, reporter
+from cond_scorenet import ConditionalScoreNet
+from train_utils import train, reporter, cond_reporter
 from ddpm import DDPM
 from importance_ddpm import ImportanceDDPM
+from cond_ddpm import CondDDPM
 
 # Parameters
 T = 1000
@@ -55,17 +57,52 @@ scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.9999)
 
 # Training the models while reporting, 
 
-
+#model = DDPM(mnist_unet, T=T).to(device)
+base_model = DDPM(mnist_unet, T).to(device)
 train(
-    DDPM(mnist_unet, T=T).to(device),
+    base_model,
     optimizer,
     scheduler,
     dataloader_train,
     epochs=epochs,
     device=device,
     ema=True,
-    per_epoch_callback=[reporter,10],
+    dropout=None,
+    per_epoch_callback=[reporter,5],
     json_filepath="exam/src/A/results/DDPM"
 )
 
-#trai
+importance_model = ImportanceDDPM(mnist_unet, T).to(device) 
+train(
+    base_model,
+    optimizer,
+    scheduler,
+    dataloader_train,
+    epochs=epochs,
+    device=device,
+    ema=False,
+    dropout=None,
+    per_epoch_callback=[reporter,5],
+    json_filepath="exam/src/A/results/ImportanceDDPM"
+)
+
+
+cond_mnist_unet = ConditionalScoreNet((lambda t: torch.ones(1).to(device)), num_classes=11)
+cond_model = CondDDPM(cond_mnist_unet,T).to(device) 
+# Construct optimizer
+cond_optimizer = torch.optim.Adam(cond_model.parameters(), lr=learning_rate)
+# Setup simple scheduler
+cond_scheduler = torch.optim.lr_scheduler.ExponentialLR(cond_optimizer, 0.9999)
+
+train(
+    cond_model,
+    cond_optimizer,
+    cond_scheduler,
+    dataloader_train,
+    epochs=epochs,
+    device=device,
+    ema=True,
+    dropout=0.2,
+    per_epoch_callback=[cond_reporter,5],
+    json_filepath="exam/src/A/results/CondDDPM"
+)
