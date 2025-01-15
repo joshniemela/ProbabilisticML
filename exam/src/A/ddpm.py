@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 
 
+
 class DDPM(nn.Module):
     def __init__(self, network, T=100, beta_1=1e-4, beta_T=2e-2):
         """
