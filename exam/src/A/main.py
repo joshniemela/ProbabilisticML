@@ -122,7 +122,7 @@ train(
     device=device,
     ema=True,
     dropout=0.2,
-    per_epoch_callback=[cond_reporter,100],
+    per_epoch_callback=[cond_reporter,num_reports],
     json_filepath="exam/src/A/results/CondDDPM"
 )
 
