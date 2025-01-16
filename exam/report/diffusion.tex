@@ -1,6 +1,6 @@
-\section{Diffusion-based generative models}
-
 \subsection{A.1: Variations}
+\subsubsection{Variation 0: Baseline}
+
 \subsubsection{Variation 1: Low-discrepency sampler}
 Here we implement a discretised version of the low-discrepency sampler (LDS) from \cite{kingma2023variationaldiffusionmodels}.
 
@@ -18,8 +18,10 @@ We note that rounding is equivalent to taking the floor of the value offset by $
 \end{align}
 
 
+\subsubsection{Variation 2: Importance sampling}
 
-\subsubsection{Variation 2: Classifier-free guidance}
+
+\subsubsection{Variation 3: Classifier-free guidance}
 Another variation we implemented is classifier-free guidance.
 The motivation behind this method is two-fold:
 \begin{enumerate}
@@ -59,6 +61,36 @@ This method of dropping out the class information at random gives us a model
 that both learns the conditional distributions of each digit, as well as the
 general unconditional distribution of the whole dataset.
 
+\subsubsection{Variation 4: Continuous-time diffusion model using SDEs}
+%We also have form \cite{anderson_reverse-time_1982} that any SDE has a reverse time SDE of the form:
+%\begin{equation}
+%  \frac{d x} =  [f(x, t)-g^2 (t) \nabla_x \log p_t (x)]dt + g(t)dW
+%\end{equation}
+
+This variation uses a stochastic differential equation to model the forward and reverse diffusion process. 
+Our forward process is a variance exploding SDE of form:
+\begin{equation}
+  dx = \sigma ^ t dW, t \in [0, 1]
+\end{equation}
+Which gives us the weighting of
+$\lambda(t) = \frac{1}{2 \log \sigma} (\sigma^{2t}-1)$ as suggested by \cite{yang_song}.
+This function is chosen to be inversely proportional to $\mathbb{E}[||\nabla_x \log p_{0t}(x(t) | x(0))||^2_2]$.
+This function was then used to replace the weighting of our score-net
+which was set to 1 for all $t \in [0, 1]$ for the three other variations (since they predict the noise instead of the score).
+Our loss function was defined to be the Fisher divergence between $s_\theta(x_t, t)$ and $\nabla_x \log p_{\text{data}}(x)$.
+Since the score-net is normalised according to the 
+inversely proportional marginal distribution, we can omit the second term and we get our loss function:
+\begin{align}
+  \mathcal{L}_\text{SDE}(\theta) &= \mathbb{E}_{x(0) \sim p_\text{data}} \mathbb{E}_{t \sim \mathcal{U}[0, 1]} \left[ 
+  \lambda(t) \mathbb{E}_{x(t) \sim q_{\sigma_t}(x(t) | x(0))} \left[
+    ||s_\theta (x_t, t) - \nabla_{x(t)} (\log q(x(t) | x(0)))||^2_2
+    \right]\right]\\
+    &\approx \mathbb{E}_{x(0) \sim p_\text{data}} \mathbb{E}_{t \sim \mathcal{U}[0, 1]} \left[ 
+  \lambda(t) \mathbb{E}_{x(t) \sim q_{\sigma_t}(x(t) | x(0))} \left[
+    \left|\left|\frac{s_\theta(x_t, t)}{\lambda(t)}\right|\right|^2_2
+    \right]\right]
+\end{align}
+We then train the model and perform our sampling using Euler-Maruyama sampling.
 
 \subsection{A.2 Comparison}
 
