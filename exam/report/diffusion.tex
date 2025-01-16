@@ -4,13 +4,13 @@
 \subsubsection{Variation 1: Low-discrepency sampler}
 Here we implement a discretised version of the low-discrepency sampler (LDS) from \cite{kingma2023variationaldiffusionmodels}.
 
-The baseline loss function provided to us works by independently sampling a timestep $t$ for each image in the batch of size $k$.
+The baseline loss function provided to us works by independently sampling a timestep $t \in \mathcal{U{0, \ldots, T}}$ for each image in the batch of size $k$.
  
 The LDS loss function works by sampling a single offset $u_0 \sim \mathcal{U}[0,1]$.
 Each timestep $t_i$ is then computed as $t_i = mod(u_0 + i/k, 1)$. Here 0 is the first timestep and 1 is the last timestep in the continuous definition of the DDPM.
 
 To discretise this process, we multiply these values by $T$ to map from $[0,1]$ to $[0, T]$. Where $T$ is the total number of diffusions performed by the model, then round to the nearest integer.
-We note that rounding is equivalent to taking the floor of the value offset by $1/2$.
+We note that rounding is equivalent to taking the floor of the value offset by $+1/2$.
 
 \begin{align}
   t_i &= \lfloor mod(u_0 + i/k, 1) \times T + \frac{1}{2} \rfloor, i = \{1, ..., k\}
