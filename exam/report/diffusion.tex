@@ -77,14 +77,14 @@ $\lambda(t) = \frac{1}{2 \log \sigma} (\sigma^{2t}-1)$ as suggested by \cite{yan
 This function is chosen to be inversely proportional to $\mathbb{E}[||\nabla_x \log p_{0t}(x(t) | x(0))||^2_2]$.
 This function was then used to replace the weighting of our score-net
 which was set to 1 for all $t \in [0, 1]$ for the three other variations (since they predict the noise instead of the score).
-Our loss function was defined to be the Fisher divergence between $s_\theta(x_t, t)$ and $\nabla_x \log p_{\text{data}}(x)$.
-Furthermore, the score-net is normalised 
-inversely proportional to the marginal distribution, so we can simply the loss function:
+Our loss function was defined to be the Fisher divergence between $s_\theta(x_t, t)$ and $\nabla_x \log p_{\text{data}}(x)$:
 \begin{align}
   \mathcal{L}_\text{SDE}(\theta) &= \mathbb{E}_{x(0) \sim p_\text{data}} \mathbb{E}_{t \sim \mathcal{U}[0, 1]} \left[ 
   \lambda(t) \mathbb{E}_{x(t) \sim q_{\sigma_t}(x(t) | x(0))} \left[
     ||s_\theta (x_t, t) - \nabla_{x(t)} (\log q(x(t) | x(0)))||^2_2
     \right]\right]\\
+  \intertext{Furthermore, we also normalise the score-net
+  inversely proportional to the marginal distribution, so we can simply the loss function:}
     &\approx \mathbb{E}_{x(0) \sim p_\text{data}} \mathbb{E}_{t \sim \mathcal{U}[0, 1]} \left[ 
   \lambda(t) \mathbb{E}_{x(t) \sim q_{\sigma_t}(x(t) | x(0))} \left[
     \left|\left|\frac{s_\theta(x_t, t)}{\lambda(t)}\right|\right|^2_2
