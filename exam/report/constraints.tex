@@ -179,12 +179,11 @@ $w$ was the weighting for our integral constraint (a linear operator that impose
 constraint on our distribution) and $w$ will never be $\overrightarrow{0}$ by construction. We then have
 \begin{align}
   \Sigma_{2|1} \tp{w}
-  &= \left(K(X) - K(X) \tp{w} (wK(X)\tp{w})^{-1} \tp{\left(K(X)\tp{w}\right)}\right) \tp{w} \\
   &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} \tp{\left(K(X)\tp{w}\right)} \tp{w} \\
   &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (w\tp{K(X)} \tp{w}) \\
   \intertext{We know that a quadratic form is equal to its transpose:}
-  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (wK(X) \tp{w}) \\
-  &= K(X)\tp{w} - K(X) \tp{w}\\
+  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (wK(X) \tp{w})
+  = K(X)\tp{w} - K(X) \tp{w}\\
   &= \overrightarrow{0}\quad \rightarrow \leftarrow
 \end{align}
 We have shown by contradiction that $\Sigma_{2|1}$ will never be full rank since $\tp{w}$ will 

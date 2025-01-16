@@ -78,8 +78,8 @@ This function is chosen to be inversely proportional to $\mathbb{E}[||\nabla_x \
 This function was then used to replace the weighting of our score-net
 which was set to 1 for all $t \in [0, 1]$ for the three other variations (since they predict the noise instead of the score).
 Our loss function was defined to be the Fisher divergence between $s_\theta(x_t, t)$ and $\nabla_x \log p_{\text{data}}(x)$.
-Since the score-net is normalised according to the 
-inversely proportional marginal distribution, we can omit the second term and we get our loss function:
+Furthermore, the score-net is normalised 
+inversely proportional to the marginal distribution, so we can simply the loss function:
 \begin{align}
   \mathcal{L}_\text{SDE}(\theta) &= \mathbb{E}_{x(0) \sim p_\text{data}} \mathbb{E}_{t \sim \mathcal{U}[0, 1]} \left[ 
   \lambda(t) \mathbb{E}_{x(t) \sim q_{\sigma_t}(x(t) | x(0))} \left[
