@@ -7,8 +7,26 @@ import torch
 from torchvision import transforms, utils
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
-
+import numpy as np
 from utils import ExponentialMovingAverage
+
+from torchmetrics.image.fid import FrechetInceptionDistance
+from torchvision.models import inception_v3
+import torchvision.transforms as T
+
+# Number of samples used  for inception and fid estimates
+N=100 
+
+def calculate_inception_score(samples, inception_model, device):
+    transform = T.Compose([T.Resize(299), T.CenterCrop(299), T.Normalize((0.5,), (0.5,))])
+    samples = transform(samples)
+    with torch.no_grad():
+        preds = torch.nn.functional.softmax(inception_model(samples), dim=-1)
+    p_yx = preds.cpu().numpy()
+    p_y = np.mean(p_yx, axis=0)
+    kl_div = p_yx * (np.log(p_yx + 1e-6) - np.log(p_y + 1e-6))
+    return np.exp(np.mean(np.sum(kl_div, axis=1)))
+
 
 
 def train(
@@ -22,6 +40,7 @@ def train(
     dropout=None,
     per_epoch_callback=None,
     json_filepath = None,
+    lds = False
 ):
     """
     Training loop
@@ -50,6 +69,10 @@ def train(
         filename to stream epoch losses to
     """
     # file name with timestamp 
+
+    fid = FrechetInceptionDistance(normalize=True).to(device)
+    inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
+    inception_model.eval()
     
     # initial metrics dump to json file
     if json_filepath is not None:
@@ -83,6 +106,9 @@ def train(
             model, device=device, decay=1.0 - ema_alpha
         )
 
+    fid_scores = []
+    inception_scores = []
+
     for epoch in range(epochs):
         
         # Switch to train mode
@@ -102,6 +128,8 @@ def train(
                     # We mask values to 10 since 0...9 are the MNIST classes
                     y[mask] = 10
                 loss = model.loss(x,y)
+            elif lds:
+                loss = model.loss(x, "lds")
             else:
                 loss = model.loss(x)
             epoch_loss += loss.item()
@@ -121,14 +149,47 @@ def train(
                 ema_global_step_counter += 1
                 if ema_global_step_counter % ema_steps == 0:
                     ema_model.update_parameters(model)
+        
 
         average_loss = epoch_loss / num_batches
+        
+        # Compute FID and Inception Score
+        with torch.no_grad():
+            # Generate samples from the model
+                # Generate samples from the model
+            samples = model.sample((N, 28 * 28)).to(device)
+
+            # Reshape and normalize samples to match FID input requirements
+            samples = samples.view(-1, 1, 28, 28)  # Reshape to (batch_size, channels, height, width)
+            samples = (samples + 1) / 2  # Normalize to [0, 1]
+            samples = samples.repeat(1, 3, 1, 1).to(device)   # Convert to 3 channels (batch_size, 3, 28, 28)
+
+            # Update FID 
+            fid.update(samples, real=False)
+
+            # Update FID with real samples
+            real_samples = dataloader.dataset.data.unsqueeze(1).float()[:N,:,:,:]  # MNIST real images
+            real_samples = real_samples.repeat(1, 3, 1, 1).to(device) 
+            fid.update(real_samples, real=True)
+
+            # Compute FID score
+            fid_score = fid.compute()
+            fid_scores.append(fid_score.item())
+            fid.reset()
+
+            # Compute Inception Score
+            inception_score = calculate_inception_score(samples, inception_model, device)
+            inception_scores.append(inception_score)
+
+
         if json_filepath is not None:
             # Prepare the data to append
             epoch_data = {
                 "epoch": epoch + 1,
                 "average_loss": average_loss,
-                "learning_rate": scheduler.get_last_lr()[0]
+                "learning_rate": scheduler.get_last_lr()[0],
+                "FID": fid_score.item(),
+                "Inception Score": inception_score.item()
             }
             # Append data step-by-step to JSON file
             with open(file_name_ts, "r+") as json_file:

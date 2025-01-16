@@ -1,5 +1,6 @@
 import torch
-import pickle
+import numpy as np
+ 
 from torchvision import datasets, transforms
 
 from scorenet import ScoreNet
@@ -13,6 +14,7 @@ from sde_ddpm import SDE_DDPM
 
 # Parameters
 T = 1000
+num_reports = 5
 learning_rate = 1e-3
 epochs = 100
 batch_size = 256
@@ -48,12 +50,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # Since we are predicting the noise (rather than the score), we
 # ignore this rescaling and just set std=1 for all t.
 
-#mnist_unet = ScoreNet((lambda t: torch.ones(1).to(device)))
-import numpy as np
- 
-mnist_unet = ScoreNet(lambda t: torch.sqrt((25**(2*t) - 1.) / 2. / np.log(25)) )
-sde_model = SDE_DDPM(mnist_unet, 25).to(device)
-#reporter(sde_model,1, "here")
+mnist_unet = ScoreNet((lambda t: torch.ones(1).to(device)))
 
 # Construct model
 model = DDPM(mnist_unet, T=T).to(device)
@@ -64,23 +61,9 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 # Setup simple scheduler
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.9999)
 
-# Training the models while reporting, 
-sde_model = SDE_DDPM(mnist_unet, 25).to(device)
-train(
-    sde_model,
-    optimizer,
-    scheduler,
-    dataloader_train,
-    epochs=epochs,
-    device=device,
-    ema=True,
-    dropout=None,
-    per_epoch_callback=[reporter,100],
-    json_filepath="exam/src/A/results/SDE"
-)
-
 #model = DDPM(mnist_unet, T=T).to(device)
 base_model = DDPM(mnist_unet, T).to(device)
+
 train(
     base_model,
     optimizer,
@@ -90,13 +73,28 @@ train(
     device=device,
     ema=True,
     dropout=None,
-    per_epoch_callback=[reporter,5],
-    json_filepath="exam/src/A/results/DDPM"
+    per_epoch_callback=[reporter,num_reports],
+    json_filepath="exam/src/A/results/base_DDPM"
+)
+
+lds_model = DDPM(mnist_unet, T).to(device)
+train(
+    lds_model,
+    optimizer,
+    scheduler,
+    dataloader_train,
+    epochs=epochs,
+    device=device,
+    ema=True,
+    dropout=None,
+    per_epoch_callback=[reporter,num_reports],
+    json_filepath="exam/src/A/results/lds_DDPM",
+    lds=True
 )
 
 importance_model = ImportanceDDPM(mnist_unet, T).to(device) 
 train(
-    base_model,
+    importance_model,
     optimizer,
     scheduler,
     dataloader_train,
@@ -104,7 +102,7 @@ train(
     device=device,
     ema=False,
     dropout=None,
-    per_epoch_callback=[reporter,5],
+    per_epoch_callback=[reporter,num_reports],
     json_filepath="exam/src/A/results/ImportanceDDPM"
 )
 
@@ -125,6 +123,23 @@ train(
     device=device,
     ema=True,
     dropout=0.2,
-    per_epoch_callback=[cond_reporter,5],
+    per_epoch_callback=[cond_reporter,num_reports],
     json_filepath="exam/src/A/results/CondDDPM"
+)
+
+
+sde_mnist_unet = ScoreNet(lambda t: torch.sqrt((25**(2*t) - 1.) / 2. / np.log(25)) )
+sde_model = SDE_DDPM(sde_mnist_unet, 25).to(device)
+
+train(
+    sde_model,
+    optimizer,
+    scheduler,
+    dataloader_train,
+    epochs=epochs,
+    device=device,
+    ema=True,
+    dropout=None,
+    per_epoch_callback=[reporter,num_reports],
+    json_filepath="exam/src/A/results/ImportanceDDPM"
 )
