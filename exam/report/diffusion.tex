@@ -59,7 +59,17 @@ This method of dropping out the class information at random gives us a model
 that both learns the conditional distributions of each digit, as well as the
 general unconditional distribution of the whole dataset.
 
+\subsubsection{Reduce the ELBO variance}
 
+To reduce the variance of the gradents when using the ELBO-bound loss, as discussed in "Improved Denoising Diffusion Probabilistic Models". 
+To implement this we keep track of the previous 10 losses for each $t \in \{0,...,T\}$ And use an importance sampler to sample the timestep t from.
+$$L_{vlb}= E_{t\sim p_t} \Left[\frac{L_t}{p_t}]\Right \;\; \text{with} \;\; p_t \probto \sqrt{E[L^2]}, \sum p_t = 1 $$.
+We initialize training by running the model as the base model (sampling each t uniformly) until we have 10 samples for each timestep.
+Once we have all of these samples we employ the importance sampler to sample new timesteps.
+The initialization phase requires a large number of samples but is typically finished within the first iteration, even for $T=1000$
+\\
+... Code sketch ...
+\\
 \subsection{A.2 Comparison}
 
 \subsubsection{Visual Comparison}
@@ -67,6 +77,7 @@ general unconditional distribution of the whole dataset.
 
 
 Similar results overall, but we notice that ...
+
 
 
 
