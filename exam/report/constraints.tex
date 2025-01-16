@@ -1,0 +1,82 @@
+\subsection{Fitting a standard GP}
+
+\subsection{Learning with Integral Constraints}
+
+We write the constraint $\hat{q}$ in matrix form:
+
+\begin{align*}
+  \hat{q} = \sum_{i=1}^\ell w_i f(x_i) = {w} f
+\end{align*}
+where $w = \begin{bmatrix} w_1, \ldots, w_\ell \end{bmatrix}$
+and $f = \tp{\begin{bmatrix} f(x_1), \ldots, f(x_\ell) \end{bmatrix}}$.
+%
+Writing the joint distribution of $(\hat{q}, f)$ as a matrix
+and facotring out $f$ we get
+\begin{align*}
+  (\hat{q}, f)
+  = \left[ \begin{array}{c} \hat{q} \\ \hline f \end{array} \right]
+  = \left[ \begin{array}{c} w \\ \hline I \end{array} \right] f
+  = Q f
+\end{align*}
+with $Q = \left[ \begin{array}{c} w \\ \hline I \end{array} \right]$.
+
+As $f \sim \mathcal{GP}(0, k(\cdot, \cdot))$, then we must by definition have
+$f | X \sim \mathcal{N}\left( 0, K(X) \right)$
+and as multivariate normal distributions are closed under linear transformations
+we therefore have
+\begin{align*}
+  (\hat{q}, f) | X
+  = Q f | X
+  \sim \mathcal{N}\left( 0, Q K(X) \tp{Q} \right).
+\end{align*}
+
+Letting ${\Sigma} = Q K(X) \tp{Q}$, we partition ${\Sigma}$
+into four blocks
+\begin{align*}
+  {\Sigma} &=
+  \left[
+    \begin{array}{c|c}
+      \Sigma_{1 1} & \Sigma_{1 2} \\
+      \hline
+      \Sigma_{2 1} & \Sigma_{2 2} \\
+    \end{array}
+  \right]
+  \intertext{
+    where
+  }
+  \Sigma_{1 1} = w K(X) \tp{w},
+  \quad
+  \Sigma_{1 2} &= w K(X),
+  \quad
+  \Sigma_{2 1} = K(X) \tp{w},
+  \quad
+  \Sigma_{2 2} = K(X).
+\end{align*}
+We then have that the conditional
+$f | X, \hat{q} \sim \mathcal{N}(\mu_{2|1}, \Sigma_{2|1})$, where
+\begin{align*}
+  \mu_{2|1} = \Sigma_{2 1} \Sigma_{1 1}^{-1} \hat{q},
+  \quad
+  \Sigma_{2|1} = \Sigma_{2 2} - \Sigma_{2 1} \Sigma_{1 1}^{-1} \tp{\Sigma_{2 1}}
+\end{align*}
+
+
+To determine whether $\Sigma_{2|1}$ is full rank, we can check if $\Sigma_{2 | 1}$
+has a trivial null space. This is equivalent to proving that there exists no
+vector $v \ne \overrightarrow{0}$ such that $\Sigma_{2 | 1} v = \overrightarrow{0}$, since the existance of such a vector
+implies that $v$ is contained in the null space of $\Sigma_{2 | 1}$ and thus is not full rank.
+We prove that it is not full rank by contradiction. We let $v=\tp{w}$ since
+$w$ was the weighting for our integral constraint (a linear operator that imposed a
+constraint on our distribution) and $w$ will never be $\overrightarrow{0}$ by construction. We then have
+\begin{align}
+  \Sigma_{2|1} \tp{w}
+  &= \left(K(X) - K(X) \tp{w} (wK(X)\tp{w})^{-1} \tp{\left(K(X)\tp{w}\right)}\right) \tp{w} \\
+  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} \tp{\left(K(X)\tp{w}\right)} \tp{w} \\
+  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (w\tp{K(X)} \tp{w}) \\
+  \intertext{We know that a quadratic form is equal to its transpose:}
+  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (wK(X) \tp{w}) \\
+  &= K(X)\tp{w} - K(X) \tp{w}\\
+  &= \overrightarrow{0}\quad \rightarrow \leftarrow
+\end{align}
+We have shown by contradiction that $\Sigma_{2|1}$ will never be full rank since $\tp{w}$ will 
+always be in the null space of $\Sigma_{2|1}$. 
