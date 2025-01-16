@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-class DDPM(nn.Module):
+class CondDDPM(nn.Module):
     def __init__(self, network, T=100, beta_1=1e-4, beta_T=2e-2):
         """
         Initialize Denoising Diffusion Probabilistic Model
@@ -19,13 +19,13 @@ class DDPM(nn.Module):
             The number of diffusion steps.
         """
 
-        super(DDPM, self).__init__()
+        super(CondDDPM, self).__init__()
 
         # Normalize time input before evaluating neural network
         # Reshape input into image format and normalize time value before sending it to network model
         self._network = network
-        self.network = lambda x, t: (
-            self._network(x.reshape(-1, 1, 28, 28), (t.squeeze() / T))
+        self.network = lambda x, t, y: (
+            self._network(x.reshape(-1, 1, 28, 28), (t.squeeze() / T), y)
         ).reshape(-1, 28 * 28)
 
         # Total number of time steps
@@ -62,7 +62,7 @@ class DDPM(nn.Module):
 
         return mean + std * epsilon
 
-    def reverse_diffusion(self, xt, t, epsilon):
+    def reverse_diffusion(self, xt, t, y, epsilon):
         """
         p(x_{t-1} | x_t)
         Single step in the reverse direction, from x_t (at timestep t) to x_{t-1}, provided a N(0,1) noise sample epsilon.
@@ -89,7 +89,7 @@ class DDPM(nn.Module):
                 xt
                 - (self.beta[t])
                 / torch.sqrt(1 - self.alpha_bar[t])
-                * self.network(xt, t)
+                * self.network(xt, t, y)
             )
         )
         std = torch.where(
@@ -103,7 +103,7 @@ class DDPM(nn.Module):
         return mean + std * epsilon
 
     @torch.no_grad()
-    def sample(self, shape):
+    def sample(self, shape, c=None, guidance_scale=2.0):
         """
         Sample from diffusion model (Algorithm 2 in Ho et al, 2020)
 
@@ -122,14 +122,31 @@ class DDPM(nn.Module):
         xT = torch.randn(shape).to(self.beta.device)
 
         xt = xT
+
+        # If none, we set this to a tensor of 10s
+        # which represents the empty class
+        if c is None:
+            c = 10
+        y = torch.ones(shape[0]).to(xt.device)
+        if isinstance(c, torch.Tensor):
+            c = c.to(xt.device)
+        y = y * c
+        y = y.int()
+
+        no_y = torch.ones(shape[0]).to(xt.device)
+        no_y = no_y * 10
+        no_y = no_y.int()
+
         for t in range(self.T, 0, -1):
             noise = torch.randn_like(xT) if t > 1 else 0
             t = torch.tensor(t).expand(xt.shape[0], 1).to(self.beta.device)
-            xt = self.reverse_diffusion(xt, t, noise)
+            unconditional_xt = self.reverse_diffusion(xt, t, no_y, noise)
+            conditional_xt = self.reverse_diffusion(xt, t, y, noise)
+            xt = torch.lerp(unconditional_xt, conditional_xt, guidance_scale)
 
         return xt
 
-    def elbo_simple(self, x0, t):
+    def elbo_simple(self, x0, t, y):
         """
         ELBO training objective (Algorithm 1 in Ho et al, 2020)
 
@@ -151,9 +168,9 @@ class DDPM(nn.Module):
 
         xt = self.forward_diffusion(x0, t, epsilon)
 
-        return -nn.MSELoss(reduction="mean")(epsilon, self.network(xt, t))
+        return -nn.MSELoss(reduction="mean")(epsilon, self.network(xt, t, y))
 
-    def loss(self, x0, sampler="iid"):
+    def loss(self, x0, y, sampler="iid"):
         """
         Loss function. Just the negative of the ELBO.
         """
@@ -175,5 +192,4 @@ class DDPM(nn.Module):
                 .to(x0.device)
             )
 
-        return -self.elbo_simple(x0, t).mean()
-    
+        return -self.elbo_simple(x0, t, y).mean()

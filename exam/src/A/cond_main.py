@@ -1,14 +1,13 @@
 import torch
-from torchvision import datasets, transforms, utils
+from torchvision import datasets, transforms
 from tqdm.auto import tqdm
-import matplotlib.pyplot as plt
 
 from utils import ExponentialMovingAverage
 from cond_ddpm import CondDDPM
-from scorenet import ConditionalScoreNet
+from train_utils import train, cond_reporter
+from cond_scorenet import ConditionalScoreNet
 
-
-def train(
+def trainf(
     model,
     optimizer,
     scheduler,
@@ -140,30 +139,6 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.9999)
 
 
-def reporter(model):
-    """Callback function used for plotting images during training"""
-
-    # Switch to eval mode
-    model.eval()
-
-    with torch.no_grad():
-        nsamples = 10
-        # sample 0 to 10
-        c = torch.randint(0, 11, (1,)).item()
-
-        samples = model.sample((nsamples, 28 * 28), c=c).cpu()
-
-        # Map pixel values back from [-1,1] to [0,1]
-        samples = (samples + 1) / 2
-        samples = samples.clamp(0.0, 1.0)
-
-        # Plot in grid
-        grid = utils.make_grid(samples.reshape(-1, 1, 28, 28), nrow=nsamples)
-        plt.gca().set_axis_off()
-        plt.imshow(transforms.functional.to_pil_image(grid), cmap="gray")
-        plt.show()
-
-
 # Call training loop
 train(
     model,
@@ -173,5 +148,6 @@ train(
     epochs=epochs,
     device=device,
     ema=True,
-    per_epoch_callback=reporter,
+    per_epoch_callback=cond_reporter,
+    dropout=0.2
 )

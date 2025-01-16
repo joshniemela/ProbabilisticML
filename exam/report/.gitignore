@@ -6,3 +6,7 @@ main.pdf
 *.out
 *.fls
 *.fdb_latexmk
+*.bbl
+*.bcf
+*.blg
+*.run.xml
