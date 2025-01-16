@@ -128,6 +128,8 @@ class CondDDPM(nn.Module):
         if c is None:
             c = 10
         y = torch.ones(shape[0]).to(xt.device)
+        if isinstance(c, torch.Tensor):
+            c = c.to(xt.device)
         y = y * c
         y = y.int()
 

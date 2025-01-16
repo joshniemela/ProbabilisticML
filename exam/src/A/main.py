@@ -106,7 +106,6 @@ train(
     json_filepath="exam/src/A/results/ImportanceDDPM"
 )
 
-
 cond_mnist_unet = ConditionalScoreNet((lambda t: torch.ones(1).to(device)), num_classes=11)
 cond_model = CondDDPM(cond_mnist_unet,T).to(device) 
 # Construct optimizer
@@ -123,13 +122,15 @@ train(
     device=device,
     ema=True,
     dropout=0.2,
-    per_epoch_callback=[cond_reporter,num_reports],
+    per_epoch_callback=[cond_reporter,100],
     json_filepath="exam/src/A/results/CondDDPM"
 )
 
+sigma =25
 
-sde_mnist_unet = ScoreNet(lambda t: torch.sqrt((25**(2*t) - 1.) / 2. / np.log(25)) )
-sde_model = SDE_DDPM(sde_mnist_unet, 25).to(device)
+
+sde_mnist_unet = ScoreNet(lambda t: torch.sqrt((sigma**(2*t) - 1.) / 2. / np.log(sigma)) )
+sde_model = SDE_DDPM(sde_mnist_unet, sigma).to(device)
 
 train(
     sde_model,

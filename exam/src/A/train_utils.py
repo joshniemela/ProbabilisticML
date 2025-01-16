@@ -237,7 +237,7 @@ def cond_reporter(model, epoch, file_path):
     with torch.no_grad():
         nsamples = 10
         # sample 0 to 10
-        c = torch.randint(0, 11, (1,)).item()
+        c = torch.randint(0, 10, (nsamples, ))
 
         samples = model.sample((nsamples, 28 * 28), c=c).cpu()
 
