@@ -13,7 +13,7 @@ To discretise this process, we multiply these values by $T$ to map from $[0,1]$ 
 We note that rounding is equivalent to taking the floor of the value offset by $+1/2$.
 
 \begin{align}
-  t_i &= \lfloor mod(u_0 + i/k, 1) \times T + \frac{1}{2} \rfloor, i = \{1, ..., k\}
+  t_i &= \left\lfloor mod(u_0 + i/k, 1) \times T + \frac{1}{2} \right\rfloor, i = \{1, ..., k\}
 \intertext{}
 \end{align}
 
