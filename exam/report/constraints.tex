@@ -12,11 +12,11 @@ globally. This kernel is the product of a periodic kernel and radial basis funct
     \exp{\left( -\frac{(x - x')^2}{2 \ell^2} \right)}
 \]
 It has three parameters:
-\begin{itemize}
+\begin{enumerate*}[label=(\alph*)]
   \item $\sigma^2$: The output variance.
   \item $\ell$: The lengthscale which determines the length of the \enquote{wiggles}.
   \item $p$: The period of the periodic kernel.
-\end{itemize}
+\end{enumerate*}
 %
 Our probabilistic model is then:
 \begin{align*}
@@ -24,10 +24,10 @@ Our probabilistic model is then:
   &=
   \mathcal{N}(0, K(X) + \epsilon I)
   \\
-\intertext{where}
+  \text{where} \quad
   K(X)_{i,j} &= k(\theta ; x_i, x_j)
-  \\
-  \theta &= (\sigma^2, \ell, p)
+  \quad \text{and} \quad
+  \theta = (\sigma^2, \ell, p)
 \end{align*}
 
 We assume that we know the noise $\epsilon = 0.01$ which we keep fixed,
@@ -67,7 +67,7 @@ are (for the most part) unimodal, which is a good sign.
 The predictions using a random sample from the posterior is shown in~\cref{fig:gp:nuts:pred}.
 The log-likelihoods of the test data is shown in~\cref{fig:gp:nuts:ll}.
 The mean and variance of the log-likelihoods is $-11.82$ and $1.76$ resp.
-
+%
 For computing the posterior log-likelihoods,
 we used the following equation
 \begin{align*}
@@ -111,23 +111,22 @@ and so for this problem we found that MAP was superior.
 \subsubsection{Deriving the distribution of $(\hat{q}, f) | X$}
 
 We write the constraint $\hat{q}$ in matrix form:
-
-\begin{align*}
+$
   \hat{q} = \sum_{i=1}^\ell w_i f(x_i) = {w} f
-\end{align*}
+$
 where $w = \begin{bmatrix} w_1, \ldots, w_\ell \end{bmatrix}$
 and $f = \tp{\begin{bmatrix} f(x_1), \ldots, f(x_\ell) \end{bmatrix}}$.
 %
-Writing the joint distribution of $(\hat{q}, f)$ as a matrix
-and facotring out $f$ we get
+Writing the joint distribution of $(\hat{q}, f)$ as a matrix we get
 \begin{align*}
   (\hat{q}, f)
   = \left[ \begin{array}{c} \hat{q} \\ \hline f \end{array} \right]
   = \left[ \begin{array}{c} w \\ \hline I \end{array} \right] f
   = Q f
+  \quad \text{where} \quad
+  Q = \left[ \begin{array}{c} w \\ \hline I \end{array} \right].
 \end{align*}
-with $Q = \left[ \begin{array}{c} w \\ \hline I \end{array} \right]$.
-
+%
 As $f \sim \mathcal{GP}(0, k(\cdot, \cdot))$, then we must by definition have
 $f | X \sim \mathcal{N}\left( 0, K(X) \right)$
 and as multivariate normal distributions are closed under linear transformations
@@ -139,6 +138,7 @@ we therefore have
 \end{align*}
 
 \subsubsection{Deriving the distribution of $f | X, \hat{q}$}
+\label{subsubsec:deriving_dist}
 
 Letting ${\Sigma} = Q K(X) \tp{Q}$, we partition ${\Sigma}$
 into four blocks
@@ -202,11 +202,57 @@ This is to be expected, as $\hat{q}$ is only a term
 in $\mu_{2|1}$ and not $\Sigma_{2|1}$.
 
 \subsubsection{
-  Plotting the posteriors
+  Computing the posteriors
   $f | \mathcal{D}$ and
   $f | \hat{q}, \mathcal{D}$
 }
 
-A plot of the unconstrained posterior is shown in~\cref{fig:gp:pred:unconstrained}.
-
-[TODO]: Plot constrained posterior.
+To compute the unconstrained posterior, we simply use the
+algorithm from~\cite[40]{krause2022notes}.
+To compute the constrained posterior, we do as follows:
+let $\mu, \Sigma$ denote the mean and covariance of the distribution of
+$(f, f^\ast) | \hat{q}, X \cup x^\ast$, which have derived in ~\cref{subsubsec:deriving_dist}.
+Writing it in block-form we get:
+\begin{align*}
+  \left[ \begin{array}{c} f \\ \hline f^\ast \end{array}  \right]
+  \sim
+  \mathcal{N}\left(
+    \left[ \begin{array}{c} \mu_X \\ \hline \mu_{x^\ast} \end{array}  \right],
+    \left[ \begin{array}{c|c}
+      \Sigma_X & \Sigma_{X x^\ast} \\ \hline
+      \Sigma_{x^\ast X} & \Sigma_{x^\ast x^\ast}
+    \end{array}  \right],
+  \right)
+\end{align*}
+Following the same reasoning from~\cite{krause2022notes},
+we then get:
+\begin{align*}
+  f^\ast | y
+  &\sim \mathcal{N}(\mu^\ast, \sigma^\ast)
+  \\
+  \mu^\ast
+  &= \mu_{x^\ast} - \tp{\Sigma_{X x^\ast}} \left(
+    \Sigma_{X} + \sigma_y^2 I
+  \right)^{-1} (y - \mu_{X})
+  \\
+  (\sigma^\ast)^2
+  &= \Sigma_{x^\ast x^\ast} - \tp{\Sigma_{X x^\ast}} \left(
+    \Sigma_{X} + \sigma_y^2 I
+  \right)^{-1} \Sigma_{X x^\ast}.
+\end{align*}
+%
+A plot of the unconstrained posterior predictive is shown in%
+~\cref{fig:gp:pred:unconstrained},
+and a plot of the constrained posterior predictive is shown in%
+~\cref{fig:gp:pred:constrained}.
+%
+While neither are particularly good fits,
+the constrained prediction follows $g$ better in the interval
+$x \in (0.5, 1]$ after the last data point, whereas the
+unconstrained prediction falls too low.
+%
+This can also be seen by the fact that the mean value
+of the unconstrained prediction is 1.1525,
+whereas the mean of the constrained prediction is 2.0039;
+much closer to the true area under the curve of $g$, 2.
+This is of course due to the constraint $\hat{q} = 2$.
