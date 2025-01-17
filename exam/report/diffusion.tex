@@ -21,7 +21,9 @@ We note that rounding is equivalent to taking the floor of the value offset by $
 \subsubsection{Variation 2: Importance sampling}
 To reduce the variance of the gradients when using the ELBO-bound loss, as discussed in "Improved Denoising Diffusion Probabilistic Models". 
 To implement this we keep track of the previous 10 losses for each $t \in \{0,...,T\}$ And use an importance sampler to sample the time-step t from.
-$$L_{vlb}= E_{t\sim p_t} \Left[\frac{L_t}{p_t}]\Right \;\; \text{with} \;\; p_t \probto \sqrt{E[L^2]}, \sum p_t = 1 $$.
+\[
+L_{\text{vlb}} = \mathbb{E}_{t \sim p_t} \left[ \frac{L_t}{p_t} \right] \quad \text{with} \quad p_t \approx \sqrt{\mathbb{E}[L^2]}, \quad \sum_t p_t = 1
+\]
 We initialize training by running the model as the base model (sampling each t uniformly) until we have 10 samples for each time-step.
 Once we have all of these samples we employ the importance sampler to sample new time-steps.
 The initialization phase requires a large number of samples but is typically finished within the first iteration, even for $T=1000$
