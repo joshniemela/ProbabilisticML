@@ -102,12 +102,35 @@ We then train the model and perform our sampling using Euler-Maruyama sampling.
 \subsection{A.2 Comparison}
 
 \subsubsection{Visual Comparison}
-
-
-
-Similar results overall, but we notice that ...
-
-
+Each of the models were trained for 100 epochs, then 10 sample images were created for each model, as can be seen in~\cref{fig:ddpm:gensamples}.
+Comparing these results visually we determined that the conditional diffusion produces the best digits (which is somewhat excepted since we are able to condition on digit classes when generating samples).
+We also conclude that the model using importance sampling produced the worst digits. 
+The other methods seem to have similar performance, but it is interesting to note that although the digits produced by SDE have high readability, they differ much from the other methods, in the sense that they are slimmer.
 
 
 \subsubsection{Quatitative Comparison}
+For our qualitative Comparison we consider, loss (negative log-likelihood), FID-score and Inception-score, to get a full picture.
+
+\begin{itemize}
+    \item likelihood\\
+    The main issue when considering the likelihood of the different methods is that likelihood doesn't indicate generalization (a model that overfits will archive a great likelihood).
+    computing the exact likelihood is intractable, so we have to depend on estimates such as the ELBO-bound. Another issue is that the likelihood is model dependent which means that our SDE isn't comparable to the other methods since we are using a different normalization.\\
+    Looking at the Results in~\cref{fig:ddpm:loss} 
+    We can notice that the loss curves are very similar.
+    The main takeaway is that our base model performs as good or better than the more advanced methods under training.
+    Furthermore we can notice that the Importance sampling method trains faster than the LDS method in the beginning but tapers of sooner. 
+     
+    \item Inception-score\\
+    The inceptions-score uses the pre-trained Inception v3 to quantify the quality of images produced by model.
+    High inception score is good, and indicates low entropy and diverse generated samples.
+    Running the Inception v3 locally required large amounts of computes, so we estimated it using only 100 samples.
+    Since these estimates are very noisy we used a 20 epoch moving average for evaluation.
+    Looking at the Results in~\cref{fig:ddpm:fid}
+    We notice that the SDE method starts of with the highest Inception score but that it stagnates quickly, meaning that all of the other methods outperformed it halfway through training.
+    As for the other methods performance is similar but we can notice that the Conditional method improves than the Importance sampling method, with the tradeoff being that it stagnates earlier on.   
+    
+    \item FID-score\\
+    The fid-score is based on the Inception-score, but also considers the ground truth of the dataset (lower FID is desired) Our FID results are based on estimates for the same reason as mentioned above.
+    Looking at the Results in~\cref{fig:ddpm:inception}
+    We notice that the FID score curves are approximately just the inverse of the Inception-score curves. As before we notice that the SDE method is an outlier, the fid score even seems to rise over epochs, suggesting that the SDE method is overfitting.
+    As for the other methods the results are similar to the conditional method performs worst, and that the LDS method performs the best, suggesting that the conditional method is more prone to overfitting.
