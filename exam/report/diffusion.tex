@@ -103,7 +103,7 @@ We then train the model and perform our sampling using Euler-Maruyama sampling.
 
 \subsubsection{Visual Comparison}
 Each of the models were trained for 100 epochs, then 10 sample images were created for each model, as can be seen in~\cref{fig:ddpm:gensamples}.
-Comparing these results visually we determined that the conditional diffusion produces the best digits (which is somewhat excepted since we are able to condition on digit classes when generating samples).
+Comparing these results visually we determined that the conditional diffusion produces the best digits (which is somewhat expected since the model is able to condition on digit classes when generating samples).
 We also conclude that the model using importance sampling produced the worst digits. 
 The other methods seem to have similar performance, but it is interesting to note that although the digits produced by SDE have high readability, they differ much from the other methods, in the sense that they are slimmer.
 
