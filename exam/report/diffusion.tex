@@ -12,10 +12,9 @@ Each timestep $t_i$ is then computed as $t_i = mod(u_0 + i/k, 1)$. Here 0 is the
 To discretise this process, we multiply these values by $T$ to map from $[0,1]$ to $[0, T]$. Where $T$ is the total number of diffusions performed by the model, then round to the nearest integer.
 We note that rounding is equivalent to taking the floor of the value offset by $+1/2$.
 
-\begin{align}
-  t_i &= \left\lfloor mod(u_0 + i/k, 1) \times T + \frac{1}{2} \right\rfloor, i = \{1, ..., k\}
-\intertext{}
-\end{align}
+\begin{equation}
+  t_i = \left\lfloor mod(u_0 + i/k, 1) \times T + \frac{1}{2} \right\rfloor, i = \{1, ..., k\}
+\end{equation}
 
 
 \subsubsection{Variation 2: Importance sampling}
@@ -27,7 +26,6 @@ L_{\text{vlb}} = \mathbb{E}_{t \sim p_t} \left[ \frac{L_t}{p_t} \right] \quad \t
 We initialize training by running the model as the base model (sampling each t uniformly) until we have 10 samples for each time-step.
 Once we have all of these samples we employ the importance sampler to sample new time-steps.
 The initialization phase requires a large number of samples but is typically finished within the first iteration, even for $T=1000$
-\subsubsection{Variation 4: Continuous-time diffusion model using SDEs}
 
 \subsubsection{Variation 3: Classifier-free guidance}
 Another variation we implemented is classifier-free guidance.
@@ -41,9 +39,9 @@ The motivation behind this method is two-fold:
 
 To implement classifier-free guidance, we create a linear combination of a conditional and unconditional score estimator, as derived in \cite{classifier_free_guidance}, for our data which is conditioned on the labels
 $y$.
-\begin{align}
-  \hat{\epsilon_\theta}(x_t, t, y) &= \epsilon_\theta(x_t, t, y) + w (\epsilon_\theta(x_t, t, y) - \epsilon_\theta(x_t, t))\label{cfg_epsilon}
-\end{align}
+\begin{equation}
+  \hat{\epsilon_\theta}(x_t, t, y) = \epsilon_\theta(x_t, t, y) + w (\epsilon_\theta(x_t, t, y) - \epsilon_\theta(x_t, t))\label{cfg_epsilon}
+\end{equation}
 where $w$ is a weighting factor that determines how strongly guidance is applied, at 0 it is unconditional, and as $w$ increases, the model becomes more guided,
 with 1 leading to a conditional score estimator and $w > 1$ leading to increasingly higher fidelity and less diversity.
 This estimator can be derived by looking at the conditional score $\nabla_{x_t} \log (p(y \mid x_t))$
@@ -74,6 +72,7 @@ general unconditional distribution of the whole dataset.
 %  \frac{d x} =  [f(x, t)-g^2 (t) \nabla_x \log p_t (x)]dt + g(t)dW
 %\end{equation}
 
+\subsubsection{Variation 4: Continuous-time diffusion model using SDEs}
 This variation uses a stochastic differential equation to model the forward and reverse diffusion process. 
 Our forward process is a variance exploding SDE of form:
 \begin{equation}
