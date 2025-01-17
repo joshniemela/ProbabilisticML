@@ -1,25 +1,132 @@
 \subsection{Fitting a standard GP}
 
+\subsubsection{Model selection}
+
+We have chosen the locally perioduc kernel~\cite[11]{duvenaud2014automatic},
+as the function we are fitting is periodic locally but changes
+globally. This kernel is the product of a periodic kernel and radial basis function kernel:
+\[
+  k( \sigma^2, \ell, p ; x, x')
+  = \sigma^2
+    \exp{\left(-\frac{2 \sin^2{(\pi | x - x' | / p)}}{\ell^2} \right)}
+    \exp{\left( -\frac{(x - x')^2}{2 \ell^2} \right)}
+\]
+It has three parameters:
+\begin{enumerate*}[label=(\alph*)]
+  \item $\sigma^2$: The output variance.
+  \item $\ell$: The lengthscale which determines the length of the \enquote{wiggles}.
+  \item $p$: The period of the periodic kernel.
+\end{enumerate*}
+%
+Our probabilistic model is then:
+\begin{align*}
+  p(\theta , y | X)
+  &=
+  \mathcal{N}(0, K(X) + \epsilon I)
+  \\
+  \text{where} \quad
+  K(X)_{i,j} &= k(\theta ; x_i, x_j)
+  \quad \text{and} \quad
+  \theta = (\sigma^2, \ell, p)
+\end{align*}
+
+We assume that we know the noise $\epsilon = 0.01$ which we keep fixed,
+so the variable parameters are $\theta = (\sigma^2, \ell, p)$.
+We justify keeping the noise fixed as is very small,
+which would suggest that we are able to sample the underlying function
+very precisely, and so we would likely have good idea of what the noise is.
+
+For the variable parameters, we choose relatively uninformed priors
+of $\text{LogNormal}(0, 1)$ for each parameter, meaning we don't
+assume much prior knowledge of the function other than the fact that
+it is locally periodic and has low noise.
+The reason the priors are log-normal rather than just normal
+is that we want to ensure our parameters are positive.
+
+\subsubsection{Computing the MAP estimate}
+
+For computing the maximum a-posteriori estimate $\theta^\ast$
+we used gradient descent via Pyro's autoguide and the Adam optimizer.
+It was trained over 2000 iterations and with a learning rate of $0.02$.
+The learned parameters were
+$\theta^\ast = (\sigma^2 \approx 2.19, \ell \approx 0.75, p \approx 0.67)$.
+The GP prediction and 95\% confidence interval of the predictions
+is shown in~\cref{fig:gp:map:pred},
+and the log-likelihood of the test data is $\sim -12.99$.
+
+\subsubsection{Sampling from the posterior with NUTS}
+
+For sampling with NUTS, we used 2000 warmup steps and 4 chains.
+These were chosen via experimentation and observing the diagnostics
+from Arviz. The sample trace and posteriors are shown in~\cref{fig:gp:nuts:trace} and \cref{fig:gp:nuts:post} resp.
+As can be seen from the trace, the four chains mostly converged to the same parameters,
+except for the length where there is some divergence.
+From the posterior samples we see that the distributions of the parameters
+are (for the most part) unimodal, which is a good sign.
+
+The predictions using a random sample from the posterior is shown in~\cref{fig:gp:nuts:pred}.
+The log-likelihoods of the test data is shown in~\cref{fig:gp:nuts:ll}.
+The mean and variance of the log-likelihoods is $-11.82$ and $1.76$ resp.
+%
+For computing the posterior log-likelihoods,
+we used the following equation
+\begin{align*}
+  \tp{y} \left( \epsilon I + K(X) \right)^{-1} y
+  + \log{\text{det}| \epsilon I + K(X) |}
+  + n \log{\sqrt{2 \pi}}
+\intertext{where $n$ is the number of elements in $y$.}
+\end{align*}
+
+\subsubsection{Comparing MAP and NUTS}
+For comparing the two methods,
+we ran 20 iterations of each, with the same hyperparameters
+as described before, except for NUTS we only used a single chain
+to speed it up.
+
+The log-likelihoods of the two methods is shown in~\cref{fig:gp:map_nuts_ll}.
+The mean and variance of the log-likelihoods are shown in~\cref{tab:gp:map_nuts_ll_mean_var}.
+From the comparison we see that NUTS performs slightly better on average,
+but is also less consistent with a few poor model parameters.
+Additionally, sampling with NUTS is much slower that training with MAP,
+and so for this problem we found that MAP was superior.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lll}
+    \toprule
+    Method & Mean  & Variance \\
+    \midrule
+    MAP    & -9.93 & 9.57     \\
+    NUTS   & -9.73 & 15.60    \\
+    \bottomrule
+  \end{tabular}  
+  \caption{
+    Mean and variance of log-likelihoods using MAP and NUTS.
+  }
+  \label{tab:gp:map_nuts_ll_mean_var}
+\end{table}
+
 \subsection{Learning with Integral Constraints}
 
-We write the constraint $\hat{q}$ in matrix form:
+\subsubsection{Deriving the distribution of $(\hat{q}, f) | X$}
 
-\begin{align*}
+We write the constraint $\hat{q}$ in matrix form:
+$
   \hat{q} = \sum_{i=1}^\ell w_i f(x_i) = {w} f
-\end{align*}
+$
 where $w = \begin{bmatrix} w_1, \ldots, w_\ell \end{bmatrix}$
 and $f = \tp{\begin{bmatrix} f(x_1), \ldots, f(x_\ell) \end{bmatrix}}$.
 %
-Writing the joint distribution of $(\hat{q}, f)$ as a matrix
-and facotring out $f$ we get
+Writing the joint distribution of $(\hat{q}, f)$ as a matrix we get
 \begin{align*}
   (\hat{q}, f)
   = \left[ \begin{array}{c} \hat{q} \\ \hline f \end{array} \right]
   = \left[ \begin{array}{c} w \\ \hline I \end{array} \right] f
   = Q f
+  \quad \text{where} \quad
+  Q = \left[ \begin{array}{c} w \\ \hline I \end{array} \right].
 \end{align*}
-with $Q = \left[ \begin{array}{c} w \\ \hline I \end{array} \right]$.
-
+%
 As $f \sim \mathcal{GP}(0, k(\cdot, \cdot))$, then we must by definition have
 $f | X \sim \mathcal{N}\left( 0, K(X) \right)$
 and as multivariate normal distributions are closed under linear transformations
@@ -29,6 +136,9 @@ we therefore have
   = Q f | X
   \sim \mathcal{N}\left( 0, Q K(X) \tp{Q} \right).
 \end{align*}
+
+\subsubsection{Deriving the distribution of $f | X, \hat{q}$}
+\label{subsubsec:deriving_dist}
 
 Letting ${\Sigma} = Q K(X) \tp{Q}$, we partition ${\Sigma}$
 into four blocks
@@ -60,23 +170,89 @@ $f | X, \hat{q} \sim \mathcal{N}(\mu_{2|1}, \Sigma_{2|1})$, where
   \Sigma_{2|1} = \Sigma_{2 2} - \Sigma_{2 1} \Sigma_{1 1}^{-1} \tp{\Sigma_{2 1}}
 \end{align*}
 
-
 To determine whether $\Sigma_{2|1}$ is full rank, we can check if $\Sigma_{2 | 1}$
 has a trivial null space. This is equivalent to proving that there exists no
-vector $v \ne \overrightarrow{0}$ such that $\Sigma_{2 | 1} v = \overrightarrow{0}$, since the existance of such a vector
+vector $v \ne \overrightarrow{0}$ such that $\Sigma_{2 | 1} v = \overrightarrow{0}$, since the existence of such a vector
 implies that $v$ is contained in the null space of $\Sigma_{2 | 1}$ and thus is not full rank.
 We prove that it is not full rank by contradiction. We let $v=\tp{w}$ since
 $w$ was the weighting for our integral constraint (a linear operator that imposed a
 constraint on our distribution) and $w$ will never be $\overrightarrow{0}$ by construction. We then have
 \begin{align}
   \Sigma_{2|1} \tp{w}
-  &= \left(K(X) - K(X) \tp{w} (wK(X)\tp{w})^{-1} \tp{\left(K(X)\tp{w}\right)}\right) \tp{w} \\
   &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} \tp{\left(K(X)\tp{w}\right)} \tp{w} \\
   &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (w\tp{K(X)} \tp{w}) \\
   \intertext{We know that a quadratic form is equal to its transpose:}
-  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (wK(X) \tp{w}) \\
-  &= K(X)\tp{w} - K(X) \tp{w}\\
+  &= K(X)\tp{w} - K(X) \tp{w} (wK(X)\tp{w})^{-1} (wK(X) \tp{w})
+  = K(X)\tp{w} - K(X) \tp{w}\\
   &= \overrightarrow{0}\quad \rightarrow \leftarrow
 \end{align}
 We have shown by contradiction that $\Sigma_{2|1}$ will never be full rank since $\tp{w}$ will 
 always be in the null space of $\Sigma_{2|1}$. 
+
+\subsubsection{Sampling $f | X \hat{q}$}
+
+Samples from $f | X, \hat{q}$ with $\ell = 101$
+for $\hat{q} \in \{ 0, 5, 10 \}$ are shown in~\cref{fig:gp:constrained:samples}.
+
+The plots for each of the three figures look similar,
+and although they differ due to the randomness of the sampling,
+the only major difference is that the plots are centered at
+$y = \hat{q}$.
+This is to be expected, as $\hat{q}$ is only a term
+in $\mu_{2|1}$ and not $\Sigma_{2|1}$.
+
+\subsubsection{
+  Computing the posteriors
+  $f | \mathcal{D}$ and
+  $f | \hat{q}, \mathcal{D}$
+}
+
+To compute the unconstrained posterior, we simply use the
+algorithm from~\cite[40]{krause2022notes}.
+To compute the constrained posterior, we do as follows:
+let $\mu, \Sigma$ denote the mean and covariance of the distribution of
+$(f, f^\ast) | \hat{q}, X \cup x^\ast$, which have derived in ~\cref{subsubsec:deriving_dist}.
+Writing it in block-form we get:
+\begin{align*}
+  \left[ \begin{array}{c} f \\ \hline f^\ast \end{array}  \right]
+  \sim
+  \mathcal{N}\left(
+    \left[ \begin{array}{c} \mu_X \\ \hline \mu_{x^\ast} \end{array}  \right],
+    \left[ \begin{array}{c|c}
+      \Sigma_X & \Sigma_{X x^\ast} \\ \hline
+      \Sigma_{x^\ast X} & \Sigma_{x^\ast x^\ast}
+    \end{array}  \right],
+  \right)
+\end{align*}
+Following the same reasoning from~\cite{krause2022notes},
+we then get:
+\begin{align*}
+  f^\ast | y
+  &\sim \mathcal{N}(\mu^\ast, \sigma^\ast)
+  \\
+  \mu^\ast
+  &= \mu_{x^\ast} - \tp{\Sigma_{X x^\ast}} \left(
+    \Sigma_{X} + \sigma_y^2 I
+  \right)^{-1} (y - \mu_{X})
+  \\
+  (\sigma^\ast)^2
+  &= \Sigma_{x^\ast x^\ast} - \tp{\Sigma_{X x^\ast}} \left(
+    \Sigma_{X} + \sigma_y^2 I
+  \right)^{-1} \Sigma_{X x^\ast}.
+\end{align*}
+%
+A plot of the unconstrained posterior predictive is shown in%
+~\cref{fig:gp:pred:unconstrained},
+and a plot of the constrained posterior predictive is shown in%
+~\cref{fig:gp:pred:constrained}.
+%
+While neither are particularly good fits,
+the constrained prediction follows $g$ better in the interval
+$x \in (0.5, 1]$ after the last data point, whereas the
+unconstrained prediction falls too low.
+%
+This can also be seen by the fact that the mean value
+of the unconstrained prediction is 1.1525,
+whereas the mean of the constrained prediction is 2.0039;
+much closer to the true area under the curve of $g$, 2.
+This is of course due to the constraint $\hat{q} = 2$.
