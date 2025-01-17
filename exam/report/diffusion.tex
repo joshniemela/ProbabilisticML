@@ -25,9 +25,7 @@ $$L_{vlb}= E_{t\sim p_t} \Left[\frac{L_t}{p_t}]\Right \;\; \text{with} \;\; p_t 
 We initialize training by running the model as the base model (sampling each t uniformly) until we have 10 samples for each time-step.
 Once we have all of these samples we employ the importance sampler to sample new time-steps.
 The initialization phase requires a large number of samples but is typically finished within the first iteration, even for $T=1000$
-\\
-... Code sketch ...
-\\\subsubsection{Variation 4: Continuous-time diffusion model using SDEs}
+\subsubsection{Variation 4: Continuous-time diffusion model using SDEs}
 
 \subsubsection{Variation 3: Classifier-free guidance}
 Another variation we implemented is classifier-free guidance.
