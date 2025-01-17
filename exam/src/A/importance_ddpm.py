@@ -29,7 +29,7 @@ class ImportanceDDPM(DDPM):
         self.prev_losses = torch.zeros((T, k), dtype=torch.float)
 
         # Track the number of samples for each timestep
-        self.t_num_samples = {t: 0 for t in range(1, T)}
+        self.t_num_samples = {t: 0 for t in range(0, T)}
 
         # State bool for initializing
         self.initializing = True
@@ -78,7 +78,7 @@ class ImportanceDDPM(DDPM):
         # Sample time step t
         # Independent sampling of t
         if sampler == "iid":
-            t = torch.randint(1, self.T, (k, 1)).to(x0.device)
+            t = torch.randint(0, self.T, (k, 1)).to(x0.device)
         # Low discrepency sampler
         elif sampler == "lds":
             u0 = torch.rand(1)
@@ -130,8 +130,47 @@ class ImportanceDDPM(DDPM):
             self.update_prev_losses(t[i].item(), loss.item())
         
         return loss
+    
+    def importance_loss(self, x0):
+        """
+        Compute the loss using importance sampling.
 
-    def loss(self, x0):
+        Parameters
+        ----------
+        x0: torch.tensor
+            Input batch of images.
+
+        Returns
+        -------
+        float
+            Computed loss value.
+        """
+        k = x0.shape[0]
+
+        # Calculate importance weights from self.prev_losses
+        with torch.no_grad():
+            importance_weights = self.prev_losses.pow(2).mean(dim=1).sqrt()  # E[L_t^2]
+            if torch.all(importance_weights == 0):  # Handle uninitialized prev_losses
+                importance_weights = torch.ones_like(importance_weights) / len(importance_weights)
+            else:
+                importance_weights = importance_weights / (importance_weights.sum() + 1e-8)  # Normalize
+
+        # Sample timesteps based on importance weights
+        t = torch.multinomial(importance_weights, k, replacement=True).unsqueeze(dim=1).to(x0.device)
+
+        # Compute loss for sampled timesteps
+        epsilon = torch.randn_like(x0)
+        xt = self.forward_diffusion(x0, t, epsilon)
+        predicted_epsilon = self.network(xt, t)
+        loss = nn.MSELoss(reduction="mean")(epsilon, predicted_epsilon)
+
+        # Update rolling history
+        for i in range(k):
+            self.update_prev_losses(t[i].item(), loss.item())
+
+        return loss
+
+    def loss(self, x0, sampler= "iid"):
         """
         Override the loss function to use importance sampler after initialization
 
@@ -146,6 +185,7 @@ class ImportanceDDPM(DDPM):
             Computed loss value.
         """
         if self.initializing:
-            return self.pre_loss(x0)
+            return self.pre_loss(x0, sampler)
         else:
             return self.importance_loss(x0)
+            

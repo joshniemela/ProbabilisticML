@@ -142,5 +142,5 @@ train(
     ema=True,
     dropout=None,
     per_epoch_callback=[reporter,num_reports],
-    json_filepath="exam/src/A/results/ImportanceDDPM"
+    json_filepath="exam/src/A/results/SdeDDPM"
 )
